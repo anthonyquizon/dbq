@@ -76,9 +76,11 @@ Import ⇐ {
     f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @
     ctx.Push f
     f infm.Set in←Info f
+    # TODO precompile
     r ← VM (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊CmpCatch in.s
     f resm.Set r
     ctx.Pop 1 
+    r
 }
 
 usage←∾∾⟜lf¨⟨
