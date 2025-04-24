@@ -2,9 +2,11 @@ gl      ←    •Import "glyphs.bqn"
 compile ← gl •Import "c.bqn"
 vm      ←    •Import "vm.bqn"
 
+fnc←0 # flag no colour
+
 ctx←@ ⋄ dbg←@
-infom←⟨⟩ •HashMap ⟨⟩
-imptm←⟨⟩ •HashMap ⟨⟩
+infm←⟨⟩ •HashMap ⟨⟩
+resm←⟨⟩ •HashMap ⟨⟩
 lf←@+10
 
 MakeStack ⇐ {
@@ -16,7 +18,7 @@ MakeStack ⇐ {
 
 CmpCatch←{ 𝕊 src:
   f←ctx.Peek@⋄⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
-  in←infom.Get f
+  in←infm.Get f
   •Out "Error: "∾msg
   •Out f∾":"∾ •Fmt s⊑in.n
   •Out (s⊑in.n)⊑in.l
@@ -58,23 +60,24 @@ System ←{ 𝕊 args:
 }
 
 Info←{ 
-  f ⇐ 𝕩∾".bqn"⋄("Missing file "∾f)!•file.Exists f # filename
-  s ⇐ •file.Chars f                 # source files in chars
-  l ⇐ (lf⊸≠)⊸/¨s⊔˜»+`lf=s           # source file in lines
-  n ⇐ +`s=lf                        # line numbers
-  c ⇐ ∾(↕≠)¨⊔˜+`s=@+10              # column numbers
-  m ⇐ ≠/˜⌽0<+`⌽¬(0⊸=≠¨l)∨∧´¨' '⊸=¨l # maximum line number TODO delete - instead snap to nearest line above
+  f ⇐ 𝕩⋄("Missing file "∾f)!•file.Exists f # filename
+  s ⇐ •file.Chars f                        # source files in chars
+  l ⇐ (lf⊸≠)⊸/¨s⊔˜»+`lf=s                  # source file in lines
+  n ⇐ +`s=lf                               # line numbers
+  c ⇐ ∾(↕≠)¨⊔˜+`s=@+10                     # column numbers
+  m ⇐ ≠/˜⌽0<+`⌽¬(0⊸=≠¨l)∨∧´¨' '⊸=¨l        # maximum line number TODO delete - instead snap to nearest line above
 }
 
 Import ⇐ {
     𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
-; · 𝕊 𝕩 : imptm.Has 𝕩 ? imptm.Get 𝕩
+; · 𝕊 𝕩 : resm.Has 𝕩 ? resm.Get 𝕩
 ; args 𝕊 𝕩 : 
-    ctx.Push f←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
-    f infom.Set in←Info f
-    c ← (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊CmpCatch in.s
-    r ← VM c
-    𝕩 imptm.Set r
+    f←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
+    f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @
+    ctx.Push f
+    f infm.Set in←Info f
+    r ← VM (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊CmpCatch in.s
+    f resm.Set r
     ctx.Pop 1 
 }
 
@@ -85,8 +88,9 @@ usage←∾∾⟜lf¨⟨
 {
   ctx↩MakeStack ⟨⟩
   dbg↩MakeStack ⟨⟩
-  
 
-  # TODO
+  {𝕊:•Out usage⋄•Exit 0}⍟(0⊸=)≠•args 
+
+  Import •wdpath∾'/'∾⊑•args
 }
 
