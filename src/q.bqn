@@ -9,6 +9,15 @@ infm←⟨⟩ •HashMap ⟨⟩
 resm←⟨⟩ •HashMap ⟨⟩
 lf←@+10
 
+ansi←{
+  e⇐@+27
+  BoldCyan⇐{𝕊:fnc?"";e∾"[1;36m"}
+  Red     ⇐{𝕊:fnc?"";e∾"[31m"}
+  Magenta ⇐{𝕊:fnc?"";e∾"[35m"}
+  BoldRed ⇐{𝕊:fnc?"";e∾"[1;31m"}
+  Reset   ⇐{𝕊:fnc?"";e∾"[0m"}
+}
+
 MakeStack ⇐ {
   s ⇐ 𝕩
   Push ⇐ {𝕊: s∾↩<𝕩}
@@ -68,6 +77,13 @@ Info←{
   m ⇐ ≠/˜⌽0<+`⌽¬(0⊸=≠¨l)∨∧´¨' '⊸=¨l        # maximum line number TODO delete - instead snap to nearest line above
 }
 
+# TODO interaction loop
+  # reread .q.bqn file for any breakpoints
+  # check enter for next
+  # check c for continue
+  # print variables in current scope
+  # record state
+
 Import ⇐ {
     𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
 ; · 𝕊 𝕩 : resm.Has 𝕩 ? resm.Get 𝕩
@@ -76,7 +92,7 @@ Import ⇐ {
     f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @
     ctx.Push f
     f infm.Set in←Info f
-    # TODO precompile
+    # TODO precompile ??
     r ← VM (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊CmpCatch in.s
     f resm.Set r
     ctx.Pop 1 
