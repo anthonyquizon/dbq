@@ -4,38 +4,51 @@ u←"wx"
 
 e←@+27
 
+hist←⟨⟩
 ch←⟨⟩
-ps←0
+ps←0 # cursor position
+hi←0 # history position
 
-nop‿mov‿cmd‿clr←↕4 # effect flags
+# ctrl-enter - continue
+# ctrl-. - next
 
-# TODO up and down for history
-
-•Show t/˜'s'=u
 clear←e∾"[2K"∾e∾"[0G"
+
+Nop←{𝕊:@}
+Cmd←{𝕊:
+  # TODO add to history
+  •term.OutRaw clear
+  •Show "command" 
+}
+
+# Consume chars until letter (ANSI format for keypresses)
+# if e [ -> consume until letter
+Input←{
+   𝕊@:                    𝕊•term.CharB@
+;  𝕊𝕩:𝕩=e             ?𝕩∾e𝕊•term.CharB@
+;  𝕊𝕩:                ⟨𝕩⟩
+; e𝕊𝕩:⊑𝕩∊∾+⟜(↕26)¨"Aa"?𝕩
+; e𝕊𝕩:                 𝕩∾e𝕊•term.CharB@
+}
+
 Map←{
-  𝕨𝕊𝕩: ⊑"\"=¯1↑𝕨 ? ⟨(¯1↓𝕨)∾z←t/˜𝕩=u, (≠z)+ps-1, nop⟩
-; 𝕨𝕊𝕩: 𝕩=@+10    ? ⟨⟨⟩,              0,         cmd⟩ 
-; 𝕨𝕊𝕩: 𝕩=@+127   ? ⟨¯1↓𝕨,            ps-1,      nop⟩ # TODO delete current position first
-; 𝕨𝕊𝕩: 𝕩=@+21    ? ⟨⟨⟩,              0,         clr⟩
-; 𝕨𝕊𝕩: 𝕩=e       ? ⟨𝕨,               ps,        mov⟩
-; 𝕨𝕊𝕩: 0=≠𝕨      ? ⟨𝕨∾𝕩,             1,         nop⟩
-; 𝕨𝕊𝕩:             
-    ⟨∾(∾⟜𝕩)¨⌾(1⊸↑) 𝕨⊔˜ps≤↕≠𝕨, ps+1, nop⟩ # insert character in position ps
+  𝕩:𝕩≡e∾"[D"? ⟨"left", 0⌈ps-1,    Nop⟩
+; 𝕩:𝕩≡e∾"[C"? ⟨"rht",  (≠ch)⌊ps+1,Nop⟩
+; 𝕩:𝕩≡≍@+10 ? ⟨⟨⟩,     0,         Cmd⟩ 
+; 𝕩:𝕩≡≍@+127? ⟨¯1↓ch,  ps-1,      Nop⟩ # TODO delete current position first
+; 𝕩:𝕩≡≍@+21 ? ⟨⟨⟩,     0,         Nop⟩
+; 𝕩:0=≠ch   ? ⟨𝕩,      1,         Nop⟩
+; 𝕩:          ⟨∾(∾⟜𝕩)¨⌾(1⊸↑)ch⊔˜ps≤↕≠ch, ps+1, Nop⟩ # TODO fix 𝕩 is list of chars, insert character in position ps
 }
 
 •term.RawMode 1
 {𝕊:
-  ⟨ch0,ps0,eff⟩←ch  Map •term.CharB@
-  prv←ch⋄ps↩ps0⋄ch↩ch0
-  { 𝕊𝕩:𝕩=mov ? {"[D":ps↩0⌈ps-1;"[C": ps↩(≠ch)⌊ps+1;·:@}⟨•term.CharB@,•term.CharB@⟩ 
-  ; 𝕊𝕩:𝕩=cmd ?  •term.OutRaw clear ⋄ •Show "command: " ∾ prv
-  ; 𝕊𝕩:@
-  } eff
+  Eff←Nop⋄ch‿ps‿Eff↩Map Input@
+  Eff @
 
-  •term.OutRaw clear # clear line and set to start of line
-  •term.OutRaw •ToUTF8 ch
-  •term.OutRaw e∾"["∾(•Fmt ps+1)∾"G"
-  •term.Flush@
+  #•term.OutRaw clear # clear line and set to start of line
+  #•term.OutRaw •ToUTF8 ch
+  #•term.OutRaw e∾"["∾(•Fmt ps+1)∾"G"
+  #•term.Flush@
 }•_while_ 1 @
 

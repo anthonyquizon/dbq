@@ -44,7 +44,6 @@ sysfile⇐{
 }
 
 syslist←⟨
-    "p"‿•Show # TODO show file and line number
     "while"‿•_while_
     "hash"‿•Hash
     "parsefloat"‿•ParseFloat
