@@ -172,19 +172,21 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
-stack_ops←⟨
+hook_ops←⟨
   16,17,20,21,26,27,   # Application
   18,19,23,22          # Application with Nothing
 ⟩
 
 # Evaluate a body
-RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
+RunBC ← { hooks𝕊bc‿pos‿env:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
-    op ← (Next@) ⊑ ops
+    op ← (i←Next@) ⊑ ops
     op ↩ Op next
-    stack Op env
+    {𝕊:hooks.Pre pos}⍟(1⊸≡) ∨´i⍷hook_ops
+    stack Op⎊hooks.Err env
+    {𝕊:hooks.Post pos}⍟(1⊸≡) ∨´i⍷hook_ops
     stack.cont  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
@@ -202,7 +204,7 @@ AdaptConst ← {
 }
 
 # Evaluate a program, given the compiler output
-{ VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+{ hooks VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts↩AdaptConst¨consts
 
   bodies ← {start‿vars‿names‿export:
@@ -210,7 +212,7 @@ AdaptConst ← {
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      RunBC bc‿start‿env
+      hooks RunBC bc‿start‿env
     }
   }¨ bodyInfo
 

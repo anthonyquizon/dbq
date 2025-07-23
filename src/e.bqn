@@ -6,30 +6,24 @@ vm      ←    •Import "vm.bqn"
 io←{⟨Out,Show,CharB,RawMode,OutRaw,Flush⟩⇐•args}
 
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
+boldCyan←e∾"[1;36m"
+red     ←e∾"[31m"
+magenta ←e∾"[35m"
+boldRed ←e∾"[1;31m"
+reset   ←e∾"[0m"
 
 asc←"`1234567890-=~!@#$%^&*()_+qwertyuiop[]QWERTYUIOP{}asdfghjkl;''ASDFGHJKL:""|zxcvbnm,./ZXCVBNM<>?"
 uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽𝕨∊↑∧y⊔⊏⊐π←→↙𝕎⍷𝕣⍋YU⊑⊒⍳⊣⊢⍉𝕤↕𝕗𝕘⊸∘○⟜⋄↩\↖𝕊D𝔽𝔾«J⌾»·˙|⥊𝕩↓∨⌊n≡∾≍≠⋈𝕏C⍒⌈N≢≤≥⇐"
 
+# imports: filename→⟨result, source code⟩
 imports←⟨⟩ •HashMap ⟨⟩ 
 
-ctx‿dbg ← {
-  s    ⇐ 𝕩
+ctx‿dbg ← {𝕊:{
+  s    ⇐ ⟨⟩
   Push ⇐ {𝕊:s∾↩<𝕩}
   Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                 # Return but don't pop top value
   Pop  ⇐ {t←-𝕩⋄(s↓˜↩t) ⊢ ⌽t↑s}            # Pop 𝕩 values; return as list
-}¨⟨{f⇐""}⟩‿⟨⟩
-
-# show compiler errors
-CmpCatch←{ f‿l 𝕊 src:
-  sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src                  # source file in lines
-  ⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
-  io.Out "Error: "∾msg
-  io.Out f∾":"∾ •Fmt s⊑sl
-  io.Out (s⊑l)⊑sl
-  io.Out ⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
-  # TODO run repl
-  •Exit 1
-}
+}}¨↕2
 
 sysfile←{
   Lines⇐{ 
@@ -63,32 +57,67 @@ System ←{ 𝕊 args:
   {𝕨⊸F⊏𝕩˙}´∾<˘⋈˘⍉>syslist∾⟨"import"‿Import, "args"‿𝕩⟩
 }
 
+# shows compiler errors
+CmpCatch←{ f 𝕊 src:
+  l←+`src=lf ⋄ sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src                  # l: line numbers, sl: source file in lines
+  ⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
+  io.Out "Error: "∾msg
+  io.Out f∾":"∾ •Fmt s⊑sl
+  io.Out (s⊑l)⊑sl
+  io.Out ⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
+  •Exit 1
+}
+
+VMCatch⇐{ 𝕊:
+  •Out ∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
+
+  {𝕊 f‿pos : 
+    ⟨·,cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
+    c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf
+
+    o←|-´(pos-1)⊑¨loc       # offset
+    c↩c⊑˜1-˜⊑(pos-1)⊑¨loc # column
+    l↩l⊑˜pos⊑⊑loc         # line
+    io.Out ∾⟨red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, reset⟩
+    #io.Out ∾⟨"  ",(l-1)⊑i.l⟩
+    #io.Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
+  }¨⌽dbg.s
+
+  # TODO run repl
+}
+
+# Hooks to run in VM
+hooks←{
+  Pre⇐{𝕊 pos: dbg.Push ⟨ctx.Peek @,pos⟩ }
+  Post⇐{𝕩}
+  Err⇐VMCatch
+}
+
 Import ⇐ {
-    𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
-; · 𝕊 𝕩 : imports.Has 𝕩 ? imports.Get 𝕩
-; args 𝕊 𝕩 : 
-    ⟨p⇐f⟩←ctx.Peek @
-    f←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
-    f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent p     # resolve relative file location
-    s←•file.Chars f ⋄ c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf #s: src, f: file, c: columns, l: lines
-    ctx.Push {f⇐f⋄c⇐c⋄l⇐l} 
-      bc ← (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊(f‿l⊸CmpCatch) s
-      f imports.Set r←VM bc
+    𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
+; 𝕨 𝕊 ⟨f⇐f⟩ : imports.Has f ? 
+    ≠⟜@◶⟨𝕨⊸𝕊⟜𝕩,⊢⟩ ⊑imports.Get f # if imports result is not realized
+; 𝕨 𝕊 ⟨f⇐f⟩ : 
+    s←•file.Chars f 
+    ctx.Push f
+      cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸CmpCatch) s
+      f imports.Set ⟨@,cm,s⟩
+      f imports.Set ⟨r←hooks VM cm,cm,s⟩
     ctx.Pop 1 
     r
+; 𝕨 𝕊 𝕩 :  # canonicalize filename
+    f←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
+    f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @     # resolve relative file location
+    𝕨 𝕊 {f⇐f}
 }
 
 Repl⇐{𝕊 opt:
   io.RawMode 1
   io.OutRaw opt.prompt
 
-  # ch: character buffer. ps: cursor offset
-  ch←⟨⟩ ⋄ ps←0 
-
+  ch←⟨⟩ ⋄ ps←0 # ch: character buffer. ps: cursor offset
   Cmd←{ch𝕊·:io.OutRaw clear⋄opt.Cmd ch}
-
-  # add 𝕩 into ch at ps position with 𝕨 deletions
-  Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch} 
+  Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch} # add 𝕩 into ch at ps position with 𝕨 deletions
 
   # map of inputs to ⟨ch, ps, eff⟩ 
   # ch: new character list, ps: position, eff: side effect function⟩
