@@ -74,13 +74,14 @@ VMCatch⇐{ 𝕊:
   {𝕊 f‿pos : 
     ⟨·,cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
     c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf
+    sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s
 
-    o←|-´(pos-1)⊑¨loc       # offset
+    o←|-´(pos-1)⊑¨loc     # offset
     c↩c⊑˜1-˜⊑(pos-1)⊑¨loc # column
-    l↩l⊑˜pos⊑⊑loc         # line
+    l↩1+l⊑˜pos⊑⊑loc       # line
     io.Out ∾⟨red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, reset⟩
-    #io.Out ∾⟨"  ",(l-1)⊑i.l⟩
-    #io.Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
+    io.Out ∾⟨"  ",(l-1)⊑sl⟩
+    io.Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
   }¨⌽dbg.s
 
   # TODO run repl
