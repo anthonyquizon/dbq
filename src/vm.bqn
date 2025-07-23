@@ -194,19 +194,8 @@ RunBC ← { hooks𝕊bc‿pos‿env:  # bytecode, starting position, environment
   stack.rslt
 }
 
-# Wrap namespace to vm compatable namespace 
-AdaptConst ← { 
-  𝕊 ns: 6≡•Type ns ?
-    Field ⇐ {p𝕊i:
-      Get ⇐ { 𝕊: ns •ns.Get i⊑p.names }
-    }
-; 𝕊 𝕩: 𝕩
-}
-
 # Evaluate a program, given the compiler output
 { hooks VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-  consts↩AdaptConst¨consts
-
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:

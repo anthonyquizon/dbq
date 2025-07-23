@@ -12,6 +12,8 @@ magenta ←e∾"[35m"
 boldRed ←e∾"[1;31m"
 reset   ←e∾"[0m"
 
+prompt←"    "
+
 asc←"`1234567890-=~!@#$%^&*()_+qwertyuiop[]QWERTYUIOP{}asdfghjkl;''ASDFGHJKL:""|zxcvbnm,./ZXCVBNM<>?"
 uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽𝕨∊↑∧y⊔⊏⊐π←→↙𝕎⍷𝕣⍋YU⊑⊒⍳⊣⊢⍉𝕤↕𝕗𝕘⊸∘○⟜⋄↩\↖𝕊D𝔽𝔾«J⌾»·˙|⥊𝕩↓∨⌊n≡∾≍≠⋈𝕏C⍒⌈N≢≤≥⇐"
 
@@ -21,8 +23,8 @@ imports←⟨⟩ •HashMap ⟨⟩
 ctx‿dbg ← {𝕊:{
   s    ⇐ ⟨⟩
   Push ⇐ {𝕊:s∾↩<𝕩}
-  Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                 # Return but don't pop top value
-  Pop  ⇐ {t←-𝕩⋄(s↓˜↩t) ⊢ ⌽t↑s}            # Pop 𝕩 values; return as list
+  Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}               # Return but don't pop top value
+  Pop  ⇐ {t←-𝕩⋄(s↓˜↩t)⊢⌽t↑s}            # Pop 𝕩 values; return as list
 }}¨↕2
 
 sysfile←{
@@ -68,9 +70,8 @@ CmpCatch←{ f 𝕊 src:
   •Exit 1
 }
 
-VMCatch⇐{ 𝕊:
-  •Out ∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
-
+VMCatch⇐{·𝕊env:
+  io.Out ∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
   {𝕊 f‿pos : 
     ⟨·,cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
     c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf
@@ -83,8 +84,7 @@ VMCatch⇐{ 𝕊:
     io.Out ∾⟨"  ",(l-1)⊑sl⟩
     io.Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
   }¨⌽dbg.s
-
-  # TODO run repl
+  Repl env
 }
 
 # Hooks to run in VM
@@ -92,6 +92,16 @@ hooks←{
   Pre⇐{𝕊 pos: dbg.Push ⟨ctx.Peek @,pos⟩ }
   Post⇐{𝕩}
   Err⇐VMCatch
+}
+
+# Wrap namespace to vm compatable namespace 
+AdaptConst ← { 𝕊 bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+  consts {
+    𝕊 ns: 6≡•Type ns ?
+      Field⇐{p𝕊i: Get ⇐ {𝕊:ns •ns.Get i⊑p.names}}
+  ; 𝕊 𝕩: 𝕩
+  }¨↩
+  bc‿consts‿blockInfo‿bodyInfo‿loc‿token
 }
 
 Import ⇐ {
@@ -102,6 +112,7 @@ Import ⇐ {
     s←•file.Chars f 
     ctx.Push f
       cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸CmpCatch) s
+      cm ↩ AdaptConst cm
       f imports.Set ⟨@,cm,s⟩
       f imports.Set ⟨r←hooks VM cm,cm,s⟩
     ctx.Pop 1 
@@ -112,26 +123,45 @@ Import ⇐ {
     𝕨 𝕊 {f⇐f}
 }
 
-Repl⇐{𝕊 opt:
+EnvMap←{ # convert env into hashmap walk up tree to accumulate values
+    𝕊 𝕩: (⟨⟩ •HashMap ⟨⟩) 𝕊 𝕩
+; h 𝕊 𝕩: 𝕩 •ns.Has "parent" ?
+    n←{𝕩.n}¨𝕩.vars
+    v←{𝕩.v}¨𝕩.vars
+    n {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨v
+    h 𝕊 𝕩.parent
+    h
+; h 𝕊 ·: h
+}
+
+Repl⇐{𝕊 env:
+  env EnvMap ↩
   io.RawMode 1
-  io.OutRaw opt.prompt
+  io.OutRaw prompt
+
+  r←•ReBQN {system⇐⟨"args"‿(env.Values@)⟩}
+  Eval←{R ∾⟨"⟨",1↓∾','⊸∾¨(env.Keys@),"⟩←•args",lf,𝕩⟩}
 
   ch←⟨⟩ ⋄ ps←0 # ch: character buffer. ps: cursor offset
-  Cmd←{ch𝕊·:io.OutRaw clear⋄opt.Cmd ch}
+  Cmd←{ch𝕊·:
+    io.OutRaw clear
+    io.Show Eval⎊•CurrentError ch
+    1
+  }
+
   Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch} # add 𝕩 into ch at ps position with 𝕨 deletions
 
-  # map of inputs to ⟨ch, ps, eff⟩ 
-  # ch: new character list, ps: position, eff: side effect function⟩
-  Map←{
-    𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          {𝕩}   ⟩ # arrow left
-  ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      {𝕩}   ⟩ # arrow right
+  Map←{ # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩ 
+    𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          1   ⟩ # arrow left
+  ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      1   ⟩ # arrow right
   ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd⟩ # enter and run command
-  ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          {𝕩}   ⟩ # backspace
-  ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               {𝕩}   ⟩ # ctrl+u
-  ; 𝕩:0=≠ch                ? ⟨𝕩,             1,               {𝕩}   ⟩
+  ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          1   ⟩ # backspace
+  ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               1   ⟩ # ctrl+u
+  ; 𝕩:𝕩≡≍@+3               ? ⟨⟨⟩,            0,               0   ⟩ # ctrl+c
+  ; 𝕩:0=≠ch                ? ⟨𝕩,             1,               1   ⟩
   ; 𝕩:'\'=ch(⊣⊑˜0⌈≠⊸⌊)ps-1 ? z←uni/˜asc∊𝕩
-                             ⟨ch0←1 Patch z, (≠z)+ps-1,       {𝕩}   ⟩ # replace '/' with unicode chars
-  ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,            {𝕩}   ⟩ 
+                             ⟨ch0←1 Patch z, (≠z)+ps-1,       1   ⟩ # replace '/' with unicode chars
+  ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,            1   ⟩ 
   }
 
   # if e consume chars until letter (ANSI format for keypimportsses)
@@ -145,12 +175,13 @@ Repl⇐{𝕊 opt:
 
   {𝕊:
     eff←@⋄ch‿ps‿Eff↩Map Input@
-    Eff @
+    ret←Eff @
 
     io.OutRaw clear # clear line and set to start of line
-    io.OutRaw opt.prompt
+    io.OutRaw prompt
     io.OutRaw ch
-    io.OutRaw e∾"["∾(•Fmt (≠opt.prompt)+ps+1)∾"G"
+    io.OutRaw e∾"["∾(•Fmt (≠prompt)+ps+1)∾"G"
     io.Flush@
-  }•_while_ 1 @
+    ret
+  }•_while_ ⊢ 1
 }
