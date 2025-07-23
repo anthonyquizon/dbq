@@ -1,5 +1,5 @@
 # test imports
-b←•Import "b.bqn"
+b←•Import "src.b.bqn"
 
 # test nested 
 {a←↕𝕩⋄{a←𝕩+1}¨a}¨↕4

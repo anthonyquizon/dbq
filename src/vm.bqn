@@ -172,6 +172,11 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
+stack_ops←⟨
+  16,17,20,21,26,27,   # Application
+  18,19,23,22          # Application with Nothing
+⟩
+
 # Evaluate a body
 RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }

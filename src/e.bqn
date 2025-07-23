@@ -10,27 +10,24 @@ e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 asc←"`1234567890-=~!@#$%^&*()_+qwertyuiop[]QWERTYUIOP{}asdfghjkl;''ASDFGHJKL:""|zxcvbnm,./ZXCVBNM<>?"
 uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽𝕨∊↑∧y⊔⊏⊐π←→↙𝕎⍷𝕣⍋YU⊑⊒⍳⊣⊢⍉𝕤↕𝕗𝕘⊸∘○⟜⋄↩\↖𝕊D𝔽𝔾«J⌾»·˙|⥊𝕩↓∨⌊n≡∾≍≠⋈𝕏C⍒⌈N≢≤≥⇐"
 
-ch←⟨⟩ # character buffer for terminal output
-ps←0  # cursor position
-
-infm←⟨⟩ •HashMap ⟨⟩
-resm←⟨⟩ •HashMap ⟨⟩
+imports←⟨⟩ •HashMap ⟨⟩ 
 
 ctx‿dbg ← {
-  s ⇐ 𝕩
-  Push ⇐ {𝕊: s∾↩<𝕩}
-  Peek ⇐ {𝕊: 0=≠s ? ⟨⟩;¯1⊑s}                 # Return but don't pop top value
-  Pop  ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s}             # Pop 𝕩 values; return as list
-}¨↕2
+  s    ⇐ 𝕩
+  Push ⇐ {𝕊:s∾↩<𝕩}
+  Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                 # Return but don't pop top value
+  Pop  ⇐ {t←-𝕩⋄(s↓˜↩t) ⊢ ⌽t↑s}            # Pop 𝕩 values; return as list
+}¨⟨{f⇐""}⟩‿⟨⟩
 
-CmpCatch←{ 𝕊 src:
-  f←ctx.Peek@⋄⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
-  in←infm.Get f
+# show compiler errors
+CmpCatch←{ f‿l 𝕊 src:
+  sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src                  # source file in lines
+  ⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
   io.Out "Error: "∾msg
-  io.Out f∾":"∾ •Fmt s⊑in.n
-  io.Out (s⊑in.n)⊑in.l
-  io.Out ⊣◶" ∧"¨«((↕≠src)/˜∨´in.n⊸=¨loc⊏in.n)∊s+↕1+e-s
-  # run repl
+  io.Out f∾":"∾ •Fmt s⊑sl
+  io.Out (s⊑l)⊑sl
+  io.Out ⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
+  # TODO run repl
   •Exit 1
 }
 
@@ -66,36 +63,27 @@ System ←{ 𝕊 args:
   {𝕨⊸F⊏𝕩˙}´∾<˘⋈˘⍉>syslist∾⟨"import"‿Import, "args"‿𝕩⟩
 }
 
-Info←{ 
-  f ⇐ 𝕩⋄("Missing file "∾f)!•file.Exists f # filename
-  s ⇐ •file.Chars f                        # source files in chars
-  l ⇐ (lf⊸≠)⊸/¨s⊔˜»+`lf=s                  # source file in lines
-  n ⇐ +`s=lf                               # line numbers
-  c ⇐ ∾(↕≠)¨⊔˜+`s=@+10                     # column numbers
-  m ⇐ ≠/˜⌽0<+`⌽¬(0⊸=≠¨l)∨∧´¨' '⊸=¨l        # maximum line number TODO delete - instead snap to nearest line above
-}
-
 Import ⇐ {
     𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
-; · 𝕊 𝕩 : resm.Has 𝕩 ? resm.Get 𝕩
+; · 𝕊 𝕩 : imports.Has 𝕩 ? imports.Get 𝕩
 ; args 𝕊 𝕩 : 
+    ⟨p⇐f⟩←ctx.Peek @
     f←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
-    f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @
-    ctx.Push f
-    f infm.Set in←Info f
-    # TODO precompile ??
-    r ← VM (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊CmpCatch in.s
-    f resm.Set r
+    f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent p     # resolve relative file location
+    s←•file.Chars f ⋄ c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf #s: src, f: file, c: columns, l: lines
+    ctx.Push {f⇐f⋄c⇐c⋄l⇐l} 
+      bc ← (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊(f‿l⊸CmpCatch) s
+      f imports.Set r←VM bc
     ctx.Pop 1 
     r
 }
-
 
 Repl⇐{𝕊 opt:
   io.RawMode 1
   io.OutRaw opt.prompt
 
-  ch←⟨⟩ ⋄ ps←0
+  # ch: character buffer. ps: cursor offset
+  ch←⟨⟩ ⋄ ps←0 
 
   Cmd←{ch𝕊·:io.OutRaw clear⋄opt.Cmd ch}
 
@@ -105,18 +93,18 @@ Repl⇐{𝕊 opt:
   # map of inputs to ⟨ch, ps, eff⟩ 
   # ch: new character list, ps: position, eff: side effect function⟩
   Map←{
-    𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          {𝕩}   ⟩
-  ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      {𝕩}   ⟩
-  ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd⟩ # enter
+    𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          {𝕩}   ⟩ # arrow left
+  ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      {𝕩}   ⟩ # arrow right
+  ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd⟩ # enter and run command
   ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          {𝕩}   ⟩ # backspace
   ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               {𝕩}   ⟩ # ctrl+u
   ; 𝕩:0=≠ch                ? ⟨𝕩,             1,               {𝕩}   ⟩
   ; 𝕩:'\'=ch(⊣⊑˜0⌈≠⊸⌊)ps-1 ? z←uni/˜asc∊𝕩
-                             ⟨ch0←1 Patch z, (≠z)+ps-1,       {𝕩}   ⟩
+                             ⟨ch0←1 Patch z, (≠z)+ps-1,       {𝕩}   ⟩ # replace '/' with unicode chars
   ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,            {𝕩}   ⟩ 
   }
 
-  # if e consume chars until letter (ANSI format for keypresses)
+  # if e consume chars until letter (ANSI format for keypimportsses)
   Input←{
      𝕊@:𝕊io.CharB@
   ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.CharB@

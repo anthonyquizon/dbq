@@ -8,4 +8,5 @@ in‿out←⟨⟩‿⟨⟩
   Flush   ⇐{𝕩}
 } •Import "../src/e.bqn"
 
-Import •wdpath∾'/'∾"src.a.bqn"
+Import •path∾'/'∾"src.a.bqn"
+
