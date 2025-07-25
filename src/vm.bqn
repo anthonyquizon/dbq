@@ -8,8 +8,12 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 MakeVar ← { program 𝕊 name:
-  v←@  # Value
-  Get  ⇐ !∘"Runtime: Variable referenced before definition"
+  n⇐name⊑program.names
+  v⇐@  # Value
+  Get ⇐ {𝕊:
+    err←"Runtime: Variable referenced before definition"
+    program.vmap.Has◶⟨!∘err,program.vmap.Get⟩ n
+  }
   SetU ⇐ !∘"↩: Variable modified before definition"
   SetN ⇐ {
     Get ↩ {𝕊:v}
@@ -18,7 +22,7 @@ MakeVar ← { program 𝕊 name:
   SetQ ⇐ 0∘SetN
   GetC ⇐ {
     r ← Get𝕩
-    Get↩SetU↩SetN↩!∘"Internal error: Variable used after clear"
+    #Get↩SetU↩SetN↩!∘"Internal error: Variable used after clear"
     r
   }
   GetF ⇐ {program 𝕩.Field name}
@@ -84,6 +88,7 @@ MakeEnv ← { 𝕊⟨
   parent ⇐ p
   program ⇐ p.program  # Determines the meaning of ID numbers
   vars ⇐ program⊸MakeVar¨ (ns⥊¯1) ∾ n  # Variables
+  SetProgram⇐{program↩𝕩}
   # Return a namespace for this environment.
   # A namespace is represented as a namespace with one field, Field.
   # 𝕨 ns.Field 𝕩 returns the value of the field with ID 𝕩 in program 𝕨.
@@ -194,8 +199,23 @@ RunBC ← { hooks𝕊bc‿pos‿env:  # bytecode, starting position, environment
   stack.rslt
 }
 
+MakeVarMap⇐{ # convert env to hashmap
+    𝕊 @: ⟨⟩ •HashMap ⟨⟩
+;   𝕊 𝕩: 𝕩 𝕊˜ ⟨⟩ •HashMap ⟨⟩
+; h 𝕊 ⟨vars⇐vars⋄parent⇐parent⟩:
+    ({𝕩.n}¨𝕩.vars) {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨{𝕩.v}¨𝕩.vars
+    h 𝕊 𝕩.parent
+    h
+; h 𝕊 ·: h
+}
+
 # Evaluate a program, given the compiler output
-{ hooks VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+Eval⇐{ hooks‿vmap VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+  consts { # Wrap namespace to vm compatable namespace 
+    𝕊 ns: 6≡•Type ns ?  Field⇐{p𝕊i: Get ⇐ {𝕊:ns •ns.Get i⊑p.names}}
+  ; 𝕊 𝕩: 𝕩
+  }¨↩
+  
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
@@ -245,7 +265,8 @@ RunBC ← { hooks𝕊bc‿pos‿env:  # bytecode, starting position, environment
     consts⇐consts
     blocks⇐blocks
     names⇐0⊑2⊑token
+    vmap⇐vmap
   }
-  
+
   (⊑blocks){𝔽} {program⇐program}
 }

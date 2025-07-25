@@ -60,14 +60,14 @@ System ←{ 𝕊 args:
 }
 
 # shows compiler errors
-CmpCatch←{ f 𝕊 src:
+_CmpCatch←{ f Exit _𝕣 src:
   l←+`src=lf ⋄ sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src                  # l: line numbers, sl: source file in lines
   ⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
   io.Out "Error: "∾msg
   io.Out f∾":"∾ •Fmt s⊑sl
   io.Out (s⊑l)⊑sl
   io.Out ⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
-  •Exit 1
+  Exit 1
 }
 
 VMCatch⇐{·𝕊env:
@@ -83,8 +83,25 @@ VMCatch⇐{·𝕊env:
     io.Out ∾⟨red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, reset⟩
     io.Out ∾⟨"  ",(l-1)⊑sl⟩
     io.Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
-  }¨⌽dbg.s
+  }¨dbg.s
   Repl env
+}
+
+# TODO compress
+VMCatchRepl⇐{·𝕊env:
+  io.Out ∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
+  {𝕊 f‿pos : 
+    ⟨·,cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
+    c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf
+    sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s
+
+    o←|-´(pos-1)⊑¨loc     # offset
+    c↩c⊑˜1-˜⊑(pos-1)⊑¨loc # column
+    l↩1+l⊑˜pos⊑⊑loc       # line
+    io.Out ∾⟨red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, reset⟩
+    io.Out ∾⟨"  ",(l-1)⊑sl⟩
+    io.Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
+  }¨dbg.s
 }
 
 # Hooks to run in VM
@@ -95,15 +112,6 @@ hooks←{
 }
 
 # Wrap namespace to vm compatable namespace 
-AdaptConst ← { 𝕊 bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-  consts {
-    𝕊 ns: 6≡•Type ns ?
-      Field⇐{p𝕊i: Get ⇐ {𝕊:ns •ns.Get i⊑p.names}}
-  ; 𝕊 𝕩: 𝕩
-  }¨↩
-  bc‿consts‿blockInfo‿bodyInfo‿loc‿token
-}
-
 Import ⇐ {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
 ; 𝕨 𝕊 ⟨f⇐f⟩ : imports.Has f ? 
@@ -111,10 +119,9 @@ Import ⇐ {
 ; 𝕨 𝕊 ⟨f⇐f⟩ : 
     s←•file.Chars f 
     ctx.Push f
-      cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸CmpCatch) s
-      cm ↩ AdaptConst cm
+      cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸(•Exit _CmpCatch)) s
       f imports.Set ⟨@,cm,s⟩
-      f imports.Set ⟨r←hooks VM cm,cm,s⟩
+      f imports.Set ⟨r←hooks‿{Has⇐0˙} vm.Eval cm,cm,s⟩
     ctx.Pop 1 
     r
 ; 𝕨 𝕊 𝕩 :  # canonicalize filename
@@ -123,29 +130,19 @@ Import ⇐ {
     𝕨 𝕊 {f⇐f}
 }
 
-EnvMap←{ # convert env into hashmap walk up tree to accumulate values
-    𝕊 𝕩: (⟨⟩ •HashMap ⟨⟩) 𝕊 𝕩
-; h 𝕊 𝕩: 𝕩 •ns.Has "parent" ?
-    n←{𝕩.n}¨𝕩.vars
-    v←{𝕩.v}¨𝕩.vars
-    n {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨v
-    h 𝕊 𝕩.parent
-    h
-; h 𝕊 ·: h
-}
-
 Repl⇐{𝕊 env:
-  env EnvMap ↩
   io.RawMode 1
   io.OutRaw prompt
+  io.Flush@
 
-  r←•ReBQN {system⇐⟨"args"‿(env.Values@)⟩}
-  Eval←{R ∾⟨"⟨",1↓∾','⊸∾¨(env.Keys@),"⟩←•args",lf,𝕩⟩}
+  vmap←vm.MakeVarMap env
 
   ch←⟨⟩ ⋄ ps←0 # ch: character buffer. ps: cursor offset
   Cmd←{ch𝕊·:
     io.OutRaw clear
-    io.Show Eval⎊•CurrentError ch
+    hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatchRepl}
+    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) ch
+    {@:1; io.Show hooks‿vmap vm.Eval 𝕩} cm
     1
   }
 
