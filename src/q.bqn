@@ -1,10 +1,16 @@
 ⟨Import,Repl⟩←{
   Out     ⇐•Out
   Show    ⇐•Show
-  CharB   ⇐•term.CharB
-  OutRaw  ⇐•term.OutRaw∘•ToUTF8
-  RawMode ⇐•term.RawMode
-  Flush   ⇐•term.Flush
+  term⇐{
+    CharB   ⇐•term.CharB
+    OutRaw  ⇐•term.OutRaw∘•ToUTF8
+    RawMode ⇐•term.RawMode
+    Flush   ⇐•term.Flush
+  }
+  file    ⇐{
+    Chars ⇐•file.Chars
+    Parent⇐•file.Parent
+  }
 } •Import "./e.bqn"
 
 usage←∾∾⟜(@+10)¨⟨

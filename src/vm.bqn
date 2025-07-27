@@ -182,23 +182,29 @@ hook_ops←⟨
   18,19,23,22          # Application with Nothing
 ⟩
 
+# TODO pass args‿vars fn -lazy get
+
 # Evaluate a body
 RunBC ← { hooks𝕊bc‿pos‿env:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
-  Step ← {𝕊:
+  {𝕊:
     op ← (i←Next@) ⊑ ops
     op ↩ Op next
     {𝕊:hooks.Pre pos}⍟(1⊸≡) ∨´i⍷hook_ops
     stack Op⎊hooks.Err env
     {𝕊:hooks.Post pos}⍟(1⊸≡) ∨´i⍷hook_ops
     stack.cont  # Changes to 0 on return or abort
-  }
-  _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
-  Step _while_ ⊢ 1
+  } •_while_ ⊢ 1
   stack.rslt
 }
 
+#FlatVars←{ # TODO lazy function
+  #args⇐args
+  #vars⇐{
+  #{𝕩.n‿𝕩.v}¨𝕩.vars # TODO dedup then put into hash
+  #}
+#}
 MakeVarMap⇐{ # convert env to hashmap
     𝕊 @: ⟨⟩ •HashMap ⟨⟩
 ;   𝕊 𝕩: 𝕩 𝕊˜ ⟨⟩ •HashMap ⟨⟩
@@ -211,6 +217,7 @@ MakeVarMap⇐{ # convert env to hashmap
 
 # Evaluate a program, given the compiler output
 Eval⇐{ hooks‿vmap VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+  •Show bc
   consts { # Wrap namespace to vm compatable namespace 
     𝕊 ns: 6≡•Type ns ?  Field⇐{p𝕊i: Get ⇐ {𝕊:ns •ns.Get i⊑p.names}}
   ; 𝕊 𝕩: 𝕩
@@ -219,20 +226,22 @@ Eval⇐{ hooks‿vmap VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
+      # 𝕩 𝕨 args 
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
+      #•SHow "args"‿{𝕩.v}¨env.vars
       hooks RunBC bc‿start‿env
     }
   }¨ bodyInfo
 
   blocks ← {type‿imm‿body:
-    # Handle operands
+    # Handle operands - modifier arguments 𝔽 𝔾
     inner ← imm ⊑ type ⊑ ⟨
       2⥊⟨{𝕊n: N ⟨⟩}⟩
       {𝕊n: {d←N 𝕣‿𝕗  ⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗  }}
       {𝕊n: {d←N 𝕣‿𝕗‿𝕘⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗‿𝕘}}
     ⟩
-    # Handle arguments
+    # Handle arguments 𝕨 𝕩
     outer ← imm ⊑ ⟨
       {
         m‿d: {𝕊v: {M 𝕤‿𝕩‿nothing∾v;D 𝕤‿𝕩‿𝕨∾v}} ;

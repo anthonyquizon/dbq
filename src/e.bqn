@@ -3,7 +3,7 @@ gl      ←    •Import "glyphs.bqn"
 compile ← gl •Import "c.bqn"
 vm      ←    •Import "vm.bqn"
 
-io←{⟨Out,Show,CharB,RawMode,OutRaw,Flush⟩⇐•args}
+io←{⟨Out,Show,term,file⟩⇐•args}
 
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 boldCyan←e∾"[1;36m"
@@ -117,7 +117,7 @@ Import ⇐ {
 ; 𝕨 𝕊 ⟨f⇐f⟩ : imports.Has f ? 
     ≠⟜@◶⟨𝕨⊸𝕊⟜𝕩,⊢⟩ ⊑imports.Get f # if imports result is not realized
 ; 𝕨 𝕊 ⟨f⇐f⟩ : 
-    s←•file.Chars f 
+    s←io.file.Chars f 
     ctx.Push f
       cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸(•Exit _CmpCatch)) s
       f imports.Set ⟨@,cm,s⟩
@@ -126,22 +126,22 @@ Import ⇐ {
     r
 ; 𝕨 𝕊 𝕩 :  # canonicalize filename
     f←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
-    f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @     # resolve relative file location
+    f↩𝕩∾˜(0⊸≢≠)◶""‿io.file.Parent ctx.Peek @     # resolve relative file location
     𝕨 𝕊 {f⇐f}
 }
 
 Repl⇐{𝕊 env:
-  io.RawMode 1
-  io.OutRaw prompt
-  io.Flush@
+  io.term.RawMode 1
+  io.term.OutRaw prompt
+  io.term.Flush@
 
-  vmap←vm.MakeVarMap env
+  vmap←vm.MakeVarMap env # TODO delete use lazy function instead
 
   ch←⟨⟩ ⋄ ps←0 # ch: character buffer. ps: cursor offset
   Cmd←{ch𝕊·:
-    io.OutRaw clear
+    io.term.OutRaw clear
     hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatchRepl}
-    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) ch
+    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) "{𝕊:"∾ch∾"}@"
     {@:1; io.Show hooks‿vmap vm.Eval 𝕩} cm
     1
   }
@@ -163,22 +163,22 @@ Repl⇐{𝕊 env:
 
   # if e consume chars until letter (ANSI format for keypimportsses)
   Input←{
-     𝕊@:𝕊io.CharB@
-  ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.CharB@
+     𝕊@:𝕊io.term.CharB@
+  ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.term.CharB@
   ;  𝕊𝕩:⟨𝕩⟩
   ; e𝕊𝕩:⊑𝕩∊∾+⟜(↕26)¨"Aa"?𝕩
-  ; e𝕊𝕩:𝕩∾e𝕊io.CharB@
+  ; e𝕊𝕩:𝕩∾e𝕊io.term.CharB@
   }
 
   {𝕊:
     eff←@⋄ch‿ps‿Eff↩Map Input@
     ret←Eff @
 
-    io.OutRaw clear # clear line and set to start of line
-    io.OutRaw prompt
-    io.OutRaw ch
-    io.OutRaw e∾"["∾(•Fmt (≠prompt)+ps+1)∾"G"
-    io.Flush@
+    io.term.OutRaw clear # clear line and set to start of line
+    io.term.OutRaw prompt
+    io.term.OutRaw ch
+    io.term.OutRaw e∾"["∾(•Fmt (≠prompt)+ps+1)∾"G"
+    io.term.Flush@
     ret
   }•_while_ ⊢ 1
 }

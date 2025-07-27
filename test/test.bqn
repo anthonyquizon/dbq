@@ -1,35 +1,28 @@
 in‿outb←⟨⟩‿⟨⟩
 
+lf←@+10
 # TODO escape escape so that its visible in buffer
-#⟨Import,Repl⟩←{
-  #Out     ⇐{outb∾⟜𝕩↩}
-  #Show    ⇐{outb∾⟜(•Fmt𝕩)↩}
-  #CharB   ⇐{𝕊:t←⊑1↑in⋄in↩1↓in⋄t}
-  #OutRaw  ⇐{outb∾⟜𝕩↩}
-  #RawMode ⇐{𝕩}
-  #Flush   ⇐{𝕩}
-#} •Import "../src/e.bqn"
-
-⟨Import,Repl⟩←{
-  Out     ⇐•Out
-  Show    ⇐•Show
-  CharB   ⇐{𝕊:t←⊑1↑in⋄in↩1↓in⋄t}
-  OutRaw  ⇐•term.OutRaw∘•ToUTF8
-  RawMode ⇐•term.RawMode
-  Flush   ⇐•term.Flush
+# print output but also accumulate output as well as autmatically send input 
+⟨Import⟩←{
+  Out     ⇐{•Out  𝕩⋄outb∾⟜⟨𝕩,    lf⟩↩}
+  Show    ⇐{•Show 𝕩⋄outb∾⟜⟨•Fmt𝕩,lf⟩↩}
+  term⇐{
+    CharB   ⇐{𝕊:t←⊑1↑in⋄in↩1↓in⋄t}
+    OutRaw  ⇐{•term.OutRaw𝕩⋄outb∾⟜𝕩↩}
+    RawMode ⇐•term.RawMode
+    Flush   ⇐•term.Flush
+  }
+  file⇐{
+    Chars⇐{𝕩} # TODO
+    Parent⇐{𝕊:""}
+  }
 } •Import "../src/e.bqn"
 
-#⟨Import,Repl⟩←{
-  #Out     ⇐•Out
-  #Show    ⇐•Show
-  #CharB   ⇐•term.CharB
-  #OutRaw  ⇐•term.OutRaw∘•ToUTF8
-  #RawMode ⇐•term.RawMode
-  #Flush   ⇐•term.Flush
-#} •Import "../src/e.bqn"
-
 in↩"a"∾(@+10)∾@+3
-Import •path∾'/'∾"src.a.bqn"
+#Import •path∾'/'∾"src.a.bqn"
+Import •path∾'/'∾"src.c.bqn"
+•term.Flush@ 
+•term.RawMode 0
 
 # TODO escape escape so that its visible in buffer
 #•Out outb
