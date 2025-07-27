@@ -182,37 +182,30 @@ hook_ops←⟨
   18,19,23,22          # Application with Nothing
 ⟩
 
-# TODO pass args‿vars fn -lazy get
+MakeVarMap←{ # convert env to hashmap
+    𝕊 @‿·: ⟨⟩ •HashMap ⟨⟩
+;   𝕊 𝕩: 𝕩 𝕊˜ ⟨⟩ •HashMap ⟨⟩
+; h 𝕊 args‿⟨vars⇐vars⋄parent⇐parent⟩:
+    ({𝕩.n}¨𝕩.vars) {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨{𝕩.v}¨𝕩.vars
+    h 𝕊 𝕩.parent
+    h
+; h 𝕊 ·: h
+}
 
 # Evaluate a body
-RunBC ← { hooks𝕊bc‿pos‿env:  # bytecode, starting position, environment
+RunBC ← { hooks𝕊bc‿pos‿env‿args:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   {𝕊:
     op ← (i←Next@) ⊑ ops
     op ↩ Op next
+    F←{𝕊:MakeVarMap env‿args}
     {𝕊:hooks.Pre pos}⍟(1⊸≡) ∨´i⍷hook_ops
-    stack Op⎊hooks.Err env
+    stack Op⎊{𝕊:hooks.Err f} env
     {𝕊:hooks.Post pos}⍟(1⊸≡) ∨´i⍷hook_ops
     stack.cont  # Changes to 0 on return or abort
   } •_while_ ⊢ 1
   stack.rslt
-}
-
-#FlatVars←{ # TODO lazy function
-  #args⇐args
-  #vars⇐{
-  #{𝕩.n‿𝕩.v}¨𝕩.vars # TODO dedup then put into hash
-  #}
-#}
-MakeVarMap⇐{ # convert env to hashmap
-    𝕊 @: ⟨⟩ •HashMap ⟨⟩
-;   𝕊 𝕩: 𝕩 𝕊˜ ⟨⟩ •HashMap ⟨⟩
-; h 𝕊 ⟨vars⇐vars⋄parent⇐parent⟩:
-    ({𝕩.n}¨𝕩.vars) {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨{𝕩.v}¨𝕩.vars
-    h 𝕊 𝕩.parent
-    h
-; h 𝕊 ·: h
 }
 
 # Evaluate a program, given the compiler output
@@ -230,7 +223,7 @@ Eval⇐{ hooks‿vmap VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
       #•SHow "args"‿{𝕩.v}¨env.vars
-      hooks RunBC bc‿start‿env
+      hooks RunBC bc‿start‿env‿args
     }
   }¨ bodyInfo
 

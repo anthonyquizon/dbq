@@ -3,6 +3,8 @@ in‿outb←⟨⟩‿⟨⟩
 lf←@+10
 # TODO escape escape so that its visible in buffer
 # print output but also accumulate output as well as autmatically send input 
+# TODO extract to function that returns instances?
+#   file chars 𝕊 char b -> output buffer
 ⟨Import⟩←{
   Out     ⇐{•Out  𝕩⋄outb∾⟜⟨𝕩,    lf⟩↩}
   Show    ⇐{•Show 𝕩⋄outb∾⟜⟨•Fmt𝕩,lf⟩↩}
@@ -13,7 +15,7 @@ lf←@+10
     Flush   ⇐•term.Flush
   }
   file⇐{
-    Chars⇐{𝕩} # TODO
+    Chars⇐{𝕩} # TODO hashmap of import chars
     Parent⇐{𝕊:""}
   }
 } •Import "../src/e.bqn"

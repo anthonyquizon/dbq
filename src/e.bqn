@@ -70,25 +70,7 @@ _CmpCatch←{ f Exit _𝕣 src:
   Exit 1
 }
 
-VMCatch⇐{·𝕊env:
-  io.Out ∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
-  {𝕊 f‿pos : 
-    ⟨·,cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
-    c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf
-    sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s
-
-    o←|-´(pos-1)⊑¨loc     # offset
-    c↩c⊑˜1-˜⊑(pos-1)⊑¨loc # column
-    l↩1+l⊑˜pos⊑⊑loc       # line
-    io.Out ∾⟨red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, reset⟩
-    io.Out ∾⟨"  ",(l-1)⊑sl⟩
-    io.Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
-  }¨dbg.s
-  Repl env
-}
-
-# TODO compress
-VMCatchRepl⇐{·𝕊env:
+VMCatch⇐{𝕊 ·:
   io.Out ∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
   {𝕊 f‿pos : 
     ⟨·,cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
@@ -108,7 +90,7 @@ VMCatchRepl⇐{·𝕊env:
 hooks←{
   Pre⇐{𝕊 pos: dbg.Push ⟨ctx.Peek @,pos⟩ }
   Post⇐{𝕩}
-  Err⇐VMCatch
+  Err⇐Repl○VMCatch
 }
 
 # Wrap namespace to vm compatable namespace 
@@ -130,18 +112,20 @@ Import ⇐ {
     𝕨 𝕊 {f⇐f}
 }
 
-Repl⇐{𝕊 env:
+# f: lazy function to construct hashmap of variables
+Repl⇐{𝕊 f:
   io.term.RawMode 1
   io.term.OutRaw prompt
   io.term.Flush@
 
-  vmap←vm.MakeVarMap env # TODO delete use lazy function instead
+  vmap←F @ 
 
   ch←⟨⟩ ⋄ ps←0 # ch: character buffer. ps: cursor offset
   Cmd←{ch𝕊·:
     io.term.OutRaw clear
     hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatchRepl}
-    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) "{𝕊:"∾ch∾"}@"
+    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) "{𝕊:"∾ch∾"}"
+    # TODO set args
     {@:1; io.Show hooks‿vmap vm.Eval 𝕩} cm
     1
   }
