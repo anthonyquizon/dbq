@@ -3,7 +3,7 @@ gl      ←    •Import "glyphs.bqn"
 compile ← gl •Import "c.bqn"
 vm      ←    •Import "vm.bqn"
 
-io←{⟨Out,Show,term,file⟩⇐•args}
+io←{⟨Out,Show,term⟩⇐•args ⋄ file⇐•file}
 
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 boldCyan←e∾"[1;36m"
@@ -87,12 +87,6 @@ VMCatch⇐{𝕊 ·:
 }
 
 # Hooks to run in VM
-hooks←{
-  Pre⇐{𝕊 pos: dbg.Push ⟨ctx.Peek @,pos⟩ }
-  Post⇐{𝕩}
-  Err⇐Repl○VMCatch
-}
-
 # Wrap namespace to vm compatable namespace 
 Import ⇐ {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
@@ -123,7 +117,7 @@ Repl⇐{𝕊 f:
   ch←⟨⟩ ⋄ ps←0 # ch: character buffer. ps: cursor offset
   Cmd←{ch𝕊·:
     io.term.OutRaw clear
-    hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatchRepl}
+    hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatch}
     cm ← (⟨1⊸⊑¨•primitives, System 𝕨, vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) "{𝕊:"∾ch∾"}"
     # TODO set args
     {@:1; io.Show hooks‿vmap vm.Eval 𝕩} cm
@@ -166,3 +160,10 @@ Repl⇐{𝕊 f:
     ret
   }•_while_ ⊢ 1
 }
+
+hooks←{
+  Pre⇐{𝕊 pos: dbg.Push ⟨ctx.Peek @,pos⟩ }
+  Post⇐{𝕩}
+  Err⇐Repl○VMCatch
+}
+

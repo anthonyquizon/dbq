@@ -219,10 +219,11 @@ Eval⇐{ hooks‿vmap VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
+      •SHow parent
+      # TODO set top level args if no parent (ie. {program⇐}) and injected args variable exists
       # 𝕩 𝕨 args 
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      #•SHow "args"‿{𝕩.v}¨env.vars
       hooks RunBC bc‿start‿env‿args
     }
   }¨ bodyInfo

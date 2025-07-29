@@ -1,31 +1,27 @@
-in‿outb←⟨⟩‿⟨⟩
+lf←@+10 # line feed
+cl←@+3  # ctrl+c
 
-lf←@+10
-# TODO escape escape so that its visible in buffer
-# print output but also accumulate output as well as autmatically send input 
-# TODO extract to function that returns instances?
-#   file chars 𝕊 char b -> output buffer
-⟨Import⟩←{
-  Out     ⇐{•Out  𝕩⋄outb∾⟜⟨𝕩,    lf⟩↩}
-  Show    ⇐{•Show 𝕩⋄outb∾⟜⟨•Fmt𝕩,lf⟩↩}
-  term⇐{
-    CharB   ⇐{𝕊:t←⊑1↑in⋄in↩1↓in⋄t}
-    OutRaw  ⇐{•term.OutRaw𝕩⋄outb∾⟜𝕩↩}
-    RawMode ⇐•term.RawMode
-    Flush   ⇐•term.Flush
-  }
-  file⇐{
-    Chars⇐{𝕩} # TODO hashmap of import chars
-    Parent⇐{𝕊:""}
-  }
-} •Import "../src/e.bqn"
+Test←{ f 𝕊 in‿exp:
+  outb←⟨⟩ # differentiate between Out function
 
-in↩"a"∾(@+10)∾@+3
-#Import •path∾'/'∾"src.a.bqn"
-Import •path∾'/'∾"src.c.bqn"
-•term.Flush@ 
-•term.RawMode 0
+  ⟨Import⟩←{
+    Out     ⇐{•Out  𝕩⋄outb∾⟜⟨𝕩,    lf⟩↩}
+    Show    ⇐{•Show 𝕩⋄outb∾⟜⟨•Fmt𝕩,lf⟩↩}
+    term⇐{
+      CharB   ⇐{𝕊:t←⊑1↑in⋄in↩1↓in⋄t}
+      OutRaw  ⇐{•term.OutRaw𝕩⋄outb∾⟜𝕩↩}
+      RawMode ⇐•term.RawMode
+      Flush   ⇐•term.Flush
+    }
+  } •Import "../src/e.bqn"
 
-# TODO escape escape so that its visible in buffer
-#•Out outb
+  Import •path∾'/'∾f
+
+  •term.Flush@ 
+  •term.RawMode 0
+
+  ! outb≡exp
+}
+
+"ex.a.bqn" Test ⟨'a',lf,cl⟩‿"⟨1 2 3⟩"
 
