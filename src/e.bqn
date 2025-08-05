@@ -124,9 +124,8 @@ Repl⇐{𝕊 f:
   Cmd←{ch𝕊·:
     io.term.OutRaw clear
     hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatch}
-    in←"x‿w←•args ⋄ w {"∾ch∾"} x"
+    in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x"
     cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
-    # TODO set args
     {@:1; io.Show hooks‿vmap vm.Eval 𝕩} cm
     1
   }

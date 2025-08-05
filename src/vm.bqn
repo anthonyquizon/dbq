@@ -186,6 +186,7 @@ hook_ops←⟨
 
 MakeVarMap←{ # convert env to hashmap
   h 𝕊 ⟨vars⇐vars⋄parent⇐parent⟩:
+    •Show {𝕩.v}¨vars
     ({𝕩.n}¨vars) {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨{𝕩.v}¨vars
     h 𝕊 parent
 ; h 𝕊 ·: h
