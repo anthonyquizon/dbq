@@ -2,7 +2,7 @@ lf←@+10 # line feed
 cl←@+3  # ctrl+c
 
 Test←{ f 𝕊 in‿exp:
-  outb←⟨⟩ # differentiate between Out function
+  outb←⟨⟩ # outb to differentiate from Out function
 
   ⟨Import⟩←{
     Out     ⇐{•Out  𝕩⋄outb∾⟜⟨𝕩,    lf⟩↩}
@@ -20,6 +20,8 @@ Test←{ f 𝕊 in‿exp:
   •term.Flush@ 
   •term.RawMode 0
 
+  # TODO get last?
+  •SHow ¨outb
   ! outb≡exp
 }
 

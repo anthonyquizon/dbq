@@ -52,7 +52,7 @@ syslist←⟨
     "type"‿•Type
 ⟩
 
-System ←{ 𝕊 args:
+System ←{
   F ← {                                                                                 # find system function
     i ← 𝕨⊐𝕩 ⋄ {!∾⟨"Unknown system value",(1≠≠𝕩)/"s",":"⟩∾" •"⊸∾¨𝕩}∘/⟜𝕩⍟(∨´) i=≠𝕨 ⋄ i
   }
@@ -75,9 +75,9 @@ VMCatch⇐{𝕊 ·:
   {𝕊 f‿pos : 
     ⟨·,cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
     c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf
-    sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s
+    sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s 
 
-    o←|-´(pos-1)⊑¨loc     # offset
+    o←|-´(pos-1)⊑¨loc     # offset 
     c↩c⊑˜1-˜⊑(pos-1)⊑¨loc # column
     l↩1+l⊑˜pos⊑⊑loc       # line
     io.Out ∾⟨red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, reset⟩
@@ -87,6 +87,12 @@ VMCatch⇐{𝕊 ·:
 }
 
 # Hooks to run in VM
+hooks←{
+  Pre⇐{𝕊 pos: dbg.Push ⟨ctx.Peek @,pos⟩ }
+  Post⇐{𝕩}
+  Err⇐{VMCatch 𝕩 ⋄ Repl 𝕩 }
+}
+
 # Wrap namespace to vm compatable namespace 
 Import ⇐ {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
@@ -118,7 +124,8 @@ Repl⇐{𝕊 f:
   Cmd←{ch𝕊·:
     io.term.OutRaw clear
     hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatch}
-    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) "{𝕊:"∾ch∾"}"
+    in←"x‿w←•args ⋄ w {"∾ch∾"} x"
+    cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
     # TODO set args
     {@:1; io.Show hooks‿vmap vm.Eval 𝕩} cm
     1
@@ -142,7 +149,7 @@ Repl⇐{𝕊 f:
   # if e consume chars until letter (ANSI format for keypimportsses)
   Input←{
      𝕊@:𝕊io.term.CharB@
-  ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.term.CharB@
+  ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.term.CharB@ 
   ;  𝕊𝕩:⟨𝕩⟩
   ; e𝕊𝕩:⊑𝕩∊∾+⟜(↕26)¨"Aa"?𝕩
   ; e𝕊𝕩:𝕩∾e𝕊io.term.CharB@
@@ -160,10 +167,3 @@ Repl⇐{𝕊 f:
     ret
   }•_while_ ⊢ 1
 }
-
-hooks←{
-  Pre⇐{𝕊 pos: dbg.Push ⟨ctx.Peek @,pos⟩ }
-  Post⇐{𝕩}
-  Err⇐Repl○VMCatch
-}
-

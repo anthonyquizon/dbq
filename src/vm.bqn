@@ -147,8 +147,8 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   13‿{i←𝕏@ ⋄ {s𝕊e: s.Push > ⌽s.Pop i } }
   14‿{i←𝕏@ ⋄ {s𝕊e: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
   # Application
-  16‿(       {s𝕊e: s.Push {   f‿x:   F x }   s.Pop 2 }˙)
-  17‿(       {s𝕊e: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙)
+  16‿(       {s𝕊e: s.Push {   f‿x:   F x }   s.Pop 2 }˙) 
+  17‿(       {s𝕊e: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙) 
   20‿(       {s𝕊e: s.Push {   g‿h:   G H }   s.Pop 2 }˙)
   21‿(       {s𝕊e: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
   26‿(       {s𝕊e: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
@@ -182,13 +182,12 @@ hook_ops←⟨
   18,19,23,22          # Application with Nothing
 ⟩
 
+# TODO peek values then run hook
+
 MakeVarMap←{ # convert env to hashmap
-    𝕊 @‿·: ⟨⟩ •HashMap ⟨⟩
-;   𝕊 𝕩: 𝕩 𝕊˜ ⟨⟩ •HashMap ⟨⟩
-; h 𝕊 args‿⟨vars⇐vars⋄parent⇐parent⟩:
-    ({𝕩.n}¨𝕩.vars) {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨{𝕩.v}¨𝕩.vars
-    h 𝕊 𝕩.parent
-    h
+  h 𝕊 ⟨vars⇐vars⋄parent⇐parent⟩:
+    ({𝕩.n}¨vars) {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨{𝕩.v}¨vars
+    h 𝕊 parent
 ; h 𝕊 ·: h
 }
 
@@ -199,7 +198,7 @@ RunBC ← { hooks𝕊bc‿pos‿env‿args:  # bytecode, starting position, envi
   {𝕊:
     op ← (i←Next@) ⊑ ops
     op ↩ Op next
-    F←{𝕊:MakeVarMap env‿args}
+    F←{𝕊: h←"𝕊𝕩𝕨" •HashMap 3↑args ⋄ h MakeVarMap env ⋄ h } # lazy function to construct variable map from env and args
     {𝕊:hooks.Pre pos}⍟(1⊸≡) ∨´i⍷hook_ops
     stack Op⎊{𝕊:hooks.Err f} env
     {𝕊:hooks.Post pos}⍟(1⊸≡) ∨´i⍷hook_ops
@@ -210,7 +209,6 @@ RunBC ← { hooks𝕊bc‿pos‿env‿args:  # bytecode, starting position, envi
 
 # Evaluate a program, given the compiler output
 Eval⇐{ hooks‿vmap VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-  •Show bc
   consts { # Wrap namespace to vm compatable namespace 
     𝕊 ns: 6≡•Type ns ?  Field⇐{p𝕊i: Get ⇐ {𝕊:ns •ns.Get i⊑p.names}}
   ; 𝕊 𝕩: 𝕩
@@ -219,7 +217,6 @@ Eval⇐{ hooks‿vmap VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
-      •SHow parent
       # TODO set top level args if no parent (ie. {program⇐}) and injected args variable exists
       # 𝕩 𝕨 args 
       env ← MakeEnv parent‿vars‿names‿export
