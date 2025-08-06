@@ -14,8 +14,8 @@ reset   ←e∾"[0m"
 
 prompt←"    "
 
-asc←"`1234567890-=~!@#$%^&*()_+qwertyuiop[]QWERTYUIOP{}asdfghjkl;''ASDFGHJKL:""|zxcvbnm,./ZXCVBNM<>?"
-uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽𝕨∊↑∧y⊔⊏⊐π←→↙𝕎⍷𝕣⍋YU⊑⊒⍳⊣⊢⍉𝕤↕𝕗𝕘⊸∘○⟜⋄↩\↖𝕊D𝔽𝔾«J⌾»·˙|⥊𝕩↓∨⌊n≡∾≍≠⋈𝕏C⍒⌈N≢≤≥⇐"
+asc←"`1234567890-=~!@#$%^&*()_+qwertyuiop[]QWERTYUIOP{}asdfghjkl;''ASDFGHJKL:""|zxcvbnm,./ZXCVBNM<>? "
+uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽𝕨∊↑∧y⊔⊏⊐π←→↙𝕎⍷𝕣⍋YU⊑⊒⍳⊣⊢⍉𝕤↕𝕗𝕘⊸∘○⟜⋄↩\↖𝕊D𝔽𝔾«J⌾»·˙|⥊𝕩↓∨⌊n≡∾≍≠⋈𝕏C⍒⌈N≢≤≥⇐‿"
 
 # imports: filename→⟨result, source code⟩
 imports←⟨⟩ •HashMap ⟨⟩ 
@@ -78,11 +78,12 @@ VMCatch⇐{𝕊 ·:
     sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s 
 
     o←|-´(pos-1)⊑¨loc     # offset 
-    c↩c⊑˜1-˜⊑(pos-1)⊑¨loc # column
+    c↩c⊑˜⊑(pos-1)⊑¨loc # column
     l↩1+l⊑˜pos⊑⊑loc       # line
-    io.Out ∾⟨red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, reset⟩
-    io.Out ∾⟨"  ",(l-1)⊑sl⟩
-    io.Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
+    ln←(l-1)⊑sl
+    h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
+    io.Out ∾⟨magenta,f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l,reset⟩
+    io.Out ∾⟨"  ",h,boldRed,m,reset,t⟩
   }¨dbg.s
 }
 
@@ -118,13 +119,11 @@ Repl⇐{𝕊 f:
   io.term.OutRaw prompt
   io.term.Flush@
 
-  vmap←F @ 
-
-  ch←⟨⟩ ⋄ ps←0 # ch: character buffer. ps: cursor offset
+  vmap←F @ ⋄ ch←⟨⟩ ⋄ ps←0 # vmap: variable mappings. ch: character buffer. ps: cursor offset
   Cmd←{ch𝕊·:
     io.term.OutRaw clear
     hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatch}
-    in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x"
+    in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables
     cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
     {@:1; io.Show hooks‿vmap vm.Eval 𝕩} cm
     1
