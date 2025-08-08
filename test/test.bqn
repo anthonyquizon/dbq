@@ -2,28 +2,26 @@ lf←@+10 # line feed
 cl←@+3  # ctrl+c
 e←@+27 
 
-Test←{ f 𝕊 in‿exp:
-  res←⟨⟩ 
+Test←{ f 𝕊 inb‿exp:
+  •Out "=== testing " ∾ f ∾ " ==="
+  inb↩∾lf∾˜¨inb
+  outb←⟨⟩
 
   ⟨Import⟩←{
-    Out     ⇐•Out
-    Show    ⇐•Show
-    Result  ⇐{•Show𝕩⋄res∾⟜⟨•Fmt𝕩⟩↩}
-    term⇐{
-      CharB   ⇐{𝕊:t←⊑1↑in⋄in↩1↓in⋄t}
-      OutRaw  ⇐•term.OutRaw
-      RawMode ⇐•term.RawMode
-      Flush   ⇐•term.Flush
-    }
+    Out ⇐{•Show𝕩⋄outb∾⟜⟨•Fmt𝕩⟩↩}
+    In  ⇐{𝕊:t←⊑1↑inb⋄inb↩1↓inb⋄t}
   } •Import "../src/e.bqn"
 
   Import •path∾'/'∾f
 
+  •term.OutRaw ≍lf
   •term.Flush@ 
   •term.RawMode 0
 
-  ! res≡exp
+  ! outb≡exp
+  •Out "=== " ∾ f ∾ " ok ✓ ==="
 }
 
-"ex.a.bqn" Test ⟨'a',lf,cl⟩‿⟨"⟨ 0 1 2 ⟩"⟩
+"ex.a.bqn" Test ⟨"a",cl⟩‿⟨"⟨ 0 1 2 ⟩"⟩
+"ex.c.bqn" Test ⟨"a","𝕨",cl⟩‿⟨"111", "111"⟩
 
