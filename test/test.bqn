@@ -1,15 +1,17 @@
 lf←@+10 # line feed
 cl←@+3  # ctrl+c
+e←@+27 
 
 Test←{ f 𝕊 in‿exp:
-  outb←⟨⟩ # outb to differentiate from Out function
+  res←⟨⟩ 
 
   ⟨Import⟩←{
-    Out     ⇐{•Out  𝕩⋄outb∾⟜⟨𝕩,    lf⟩↩}
-    Show    ⇐{•Show 𝕩⋄outb∾⟜⟨•Fmt𝕩,lf⟩↩}
+    Out     ⇐•Out
+    Show    ⇐•Show
+    Result  ⇐{•Show𝕩⋄res∾⟜⟨•Fmt𝕩⟩↩}
     term⇐{
       CharB   ⇐{𝕊:t←⊑1↑in⋄in↩1↓in⋄t}
-      OutRaw  ⇐{•term.OutRaw𝕩⋄outb∾⟜𝕩↩}
+      OutRaw  ⇐•term.OutRaw
       RawMode ⇐•term.RawMode
       Flush   ⇐•term.Flush
     }
@@ -20,10 +22,8 @@ Test←{ f 𝕊 in‿exp:
   •term.Flush@ 
   •term.RawMode 0
 
-  # TODO get last?
-  •SHow ¨outb
-  ! outb≡exp
+  ! res≡exp
 }
 
-"ex.a.bqn" Test ⟨'a',lf,cl⟩‿"⟨1 2 3⟩"
+"ex.a.bqn" Test ⟨'a',lf,cl⟩‿⟨"⟨ 0 1 2 ⟩"⟩
 

@@ -3,7 +3,7 @@ gl      ←    •Import "glyphs.bqn"
 compile ← gl •Import "c.bqn"
 vm      ←    •Import "vm.bqn"
 
-io←{⟨Out,Show,term⟩⇐•args ⋄ file⇐•file}
+io←{⟨Out,Show,Result,term⟩⇐•args ⋄ file⇐•file}
 
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 boldCyan←e∾"[1;36m"
@@ -80,10 +80,16 @@ VMCatch⇐{𝕊 ·:
     o←|-´(pos-1)⊑¨loc     # offset 
     c↩c⊑˜⊑(pos-1)⊑¨loc # column
     l↩1+l⊑˜pos⊑⊑loc       # line
-    ln←(l-1)⊑sl
-    h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
-    io.Out ∾⟨magenta,f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l,reset⟩
-    io.Out ∾⟨"  ",h,boldRed,m,reset,t⟩
+
+    #ln←(l-1)⊑sl
+    #h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
+    #io.Out ∾⟨magenta,f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l,reset⟩
+    #io.Out ∾⟨"  ",h,boldRed,m,reset,t⟩
+
+    #-- cbqn like stack trace --
+    io.Out ∾⟨f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l⟩
+    io.Out ∾⟨"  ",(l-1)⊑sl⟩
+    io.Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
   }¨dbg.s
 }
 
@@ -103,6 +109,7 @@ Import ⇐ {
     s←io.file.Chars f 
     ctx.Push f
       cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸(•Exit _CmpCatch)) s
+      # TODO preparse break points via compiled bytecodes?
       f imports.Set ⟨@,cm,s⟩
       f imports.Set ⟨r←hooks‿{Has⇐0˙} vm.Eval cm,cm,s⟩
     ctx.Pop 1 
@@ -125,7 +132,7 @@ Repl⇐{𝕊 f:
     hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatch}
     in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables
     cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
-    {@:1; io.Show hooks‿vmap vm.Eval 𝕩} cm
+    {@:1; io.Result hooks‿vmap vm.Eval 𝕩} cm
     1
   }
 

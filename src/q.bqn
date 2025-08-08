@@ -1,6 +1,7 @@
 ⟨Import,Repl⟩←{
-  Out     ⇐•Out
-  Show    ⇐•Show
+  Out    ⇐•Out
+  Show   ⇐•Show
+  Result ⇐•Show
   term⇐{
     CharB   ⇐•term.CharB
     OutRaw  ⇐•term.OutRaw∘•ToUTF8
