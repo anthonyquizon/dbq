@@ -74,30 +74,46 @@ _CmpCatch←{ f Exit _𝕣 src:
 VMCatch⇐{𝕊 ·:
   io.term.OutRaw lf∾˜∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
   {𝕊 f‿pos : 
-    ⟨·,cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
-    c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf
-    sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s 
+    𝕩
+    #⟨line, cols, cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
+    #c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf ⋄ sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s 
+    #o←|-´(pos-1)⊑¨loc     # offset 
+    #c↩c⊑˜⊑(pos-1)⊑¨loc # column
+    #l↩1+l⊑˜pos⊑⊑loc       # line
 
-    o←|-´(pos-1)⊑¨loc     # offset 
-    c↩c⊑˜⊑(pos-1)⊑¨loc # column
-    l↩1+l⊑˜pos⊑⊑loc       # line
+    ##ln←(l-1)⊑sl
+    ##h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
+    ##•Out ∾⟨magenta,f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l,reset⟩
+    ##•Out ∾⟨"  ",h,boldRed,m,reset,t⟩
 
-    #ln←(l-1)⊑sl
-    #h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
-    #•Out ∾⟨magenta,f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l,reset⟩
-    #•Out ∾⟨"  ",h,boldRed,m,reset,t⟩
-
-    #-- cbqn like stack trace --
-    io.term.OutRaw lf∾˜∾⟨f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l⟩
-    io.term.OutRaw lf∾˜∾⟨"  ",(l-1)⊑sl⟩
-    io.term.OutRaw lf∾˜∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
+    ##-- cbqn like stack trace --
+    #io.term.OutRaw lf∾˜∾⟨f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l⟩
+    #io.term.OutRaw lf∾˜∾⟨"  ",(l-1)⊑sl⟩
+    #io.term.OutRaw lf∾˜∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
   }¨dbg.s
+}
+
+_PreHook←{f _𝕣 pos: 
+  ⟨cm,src,line,break⟩←imports.Get file←ctx.Peek @ ⋄ bc‿·‿·‿·‿loc‿·←cm
+
+  sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src
+  l←1+line⊑˜pos⊑⊑loc       # line
+  ln←(l-1)⊑sl
+
+  #•Show "hook"‿pos
+  #•Show pos⊑bc
+  #•Show pos⊑break
+  #⟨line, cols, cm,s⟩←imports.Get f 
+
+  #•Show pos⊏line
+  {𝕊: Repl f}⍟⊣ pos⊑break
+  dbg.Push ⟨file,pos⟩ 
 }
 
 # Hooks to run in VM
 hooks←{
-  Pre⇐{𝕊 pos: dbg.Push ⟨ctx.Peek @,pos⟩ }
-  Post⇐{𝕩}
+  _Pre⇐_PreHook
+  _Post⇐{· _𝕣 ·: 𝕩}
   Err⇐{VMCatch 𝕩 ⋄ Repl 𝕩 }
 }
 
@@ -108,20 +124,36 @@ Import ⇐ {
     ≠⟜@◶⟨𝕨⊸𝕊⟜𝕩,⊢⟩ ⊑imports.Get f # if imports result is not realized
 ; 𝕨 𝕊 ⟨f⇐f⟩ : 
     s←•file.Chars f 
+    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸(•Exit _CmpCatch)) s
+    ·‿·‿·‿·‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
+
+    #bc‿·‿·‿·‿·‿·←cm
+    #break ← /(∨´"??"⊸⍷)¨s⊔˜+`s=lf # break point line numbers
+    #line  ← +`s=lf 
+    #•SHow break
+    #•Show »⊸<break∊˜i⊏line
+    #•SHow [i⊏line, i, bc]
+    #•SHow [i⊏line, i, bc, i⊏s]
+    #•Show i⊏line
+
+    #•SHow [↕≠bc,bc,(i⊏(+`s=lf))∊/(∨´"??"⊸⍷)¨s⊔˜+`s=lf]
+    # Saved data for imports
+    ns←{
+      line  ⇐ +`s=lf 
+      cols  ⇐ ∾(↕≠)¨⊔˜+`s=@+10 
+      break ⇐ (i⊏line)∊/(∨´"??"⊸⍷)¨s⊔˜+`s=lf # break point bytecode mask - accessed by pos
+      cm    ⇐ cm                                # compilation result
+      src   ⇐ s                                 # raw source code (helps for debugging)
+      ret   ⇐ @                                 # return result - updated after VM run
+
+      SetRet⇐{ ret↩𝕩 }
+    }
+
     ctx.Push f
-      cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸(•Exit _CmpCatch)) s
-      l←s⊔˜+`s=lf
-      #c‿q‿·←{𝕩⊔˜+`(=⟜hs∨(≠∘⊢↑"??"⊸⍷))𝕩}¨l # c: code, q: query
-      #q↩((∨`∧∨⟜«)' '⊸≠)⊸/1⊸↓q
-      #•SHow (≠a)↑q⍷c
-      #•SHow cm
-
-
-      # TODO preparse break points via compiled bytecodes?
-      f imports.Set ⟨@,cm,s⟩
-      f imports.Set ⟨r←hooks‿{Has⇐0˙} vm.Eval cm,cm,s⟩
+    f imports.Set ns
+    ns.SetRet ret←hooks‿{Has⇐0˙} vm.Eval cm
     ctx.Pop 1 
-    r
+    ret
 ; 𝕨 𝕊 𝕩 :  # canonicalize filename
     f←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
     f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @     # resolve relative file location
@@ -135,9 +167,10 @@ Repl⇐{𝕊 f:
   io.term.Flush@
 
   vmap←F @ ⋄ ch←⟨⟩ ⋄ ps←0 # vmap: variable mappings. ch: character buffer. ps: cursor offset
+  hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄Err⇐VMCatch}
+
   Cmd←{ch𝕊·:
     io.term.OutRaw clear
-    hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatch}
     in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables
     cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
     {@:1; io.Out hooks‿vmap vm.Eval 𝕩} cm

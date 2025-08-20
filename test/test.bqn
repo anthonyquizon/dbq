@@ -3,7 +3,6 @@ cl←@+3  # ctrl+c
 e←@+27 
 
 Test←{ f 𝕊 inb‿exp:
-  •Out "=== testing " ∾ f ∾ " ==="
   inb↩∾cl∾˜lf∾˜¨inb
   outb←⟨⟩
 
@@ -20,10 +19,10 @@ Test←{ f 𝕊 inb‿exp:
   Import •path∾'/'∾f
 
   ! outb≡exp
-  •Out "=== " ∾ f ∾ " ok ✓ ==="
 }
 
-"ex.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables
-"ex.c.bqn" Test ⟨"a","𝕨", "b", "𝕩"⟩‿⟨"111", "111","555","555"⟩  # should print out argument variables in function
-#"ex.e.bqn" Test ⟨⟩‿⟨⟩  # should print out argument variables in function
+#"ex.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables
+#"ex.c.bqn" Test ⟨"a","𝕨", "b", "𝕩"⟩‿⟨"111", "111","555","555"⟩  # should print out argument variables in function
+"ex.e.bqn" Test ⟨"a","b"⟩‿⟨"10", "20"⟩                          # should print out argument variables in break point position
 
+•Out "ok ✓"
