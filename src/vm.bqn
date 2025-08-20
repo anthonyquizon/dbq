@@ -177,13 +177,6 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
-# TODO peek values then run hook
-hook_ops←⟨
-  #16,17,20,21,26,27,   # Application
-  #18,19,23,22          # Application with Nothing
-  47,48,49,50,51 # Assignment
-⟩
-
 MakeVarMap←{ # convert env to hashmap
   h 𝕊 ⟨vars⇐vars⋄parent⇐parent⟩:
     ({𝕩.n}¨vars) {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨{𝕩.v}¨vars
@@ -201,9 +194,8 @@ RunBC ← { hooks𝕊bc‿pos‿env‿args:  # bytecode, starting position, envi
 
     F←{𝕊: h←"𝕊𝕩𝕨" •HashMap 3↑args ⋄ h MakeVarMap env ⋄ h } # lazy function to construct variable map from env and args
 
-    {𝕊:f hooks._Pre (pos-1)}⍟(∨´⍷⟜hook_ops) i
+    f hooks._Pre (pos-1)
     stack Op⎊{𝕊:hooks.Err f} env
-    (f hooks._Post (pos-1))⍟(∨´⍷⟜hook_ops) i
 
     stack.cont  # Changes to 0 on return or abort
   } •_while_ ⊢ 1

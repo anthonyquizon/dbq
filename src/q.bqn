@@ -1,4 +1,4 @@
-⟨Import,Repl⟩←{
+⟨Run,Repl⟩←{
   Out  ⇐ •Show
   In   ⇐ •term.CharB
   term ⇐ •term
@@ -9,4 +9,4 @@ usage←∾∾⟜(@+10)¨⟨
 ⟩
 
 {𝕊:•Out usage⋄•Exit 0}⍟(0⊸=)≠•args 
-Import •wdpath∾'/'∾⊑•args
+Run •wdpath∾'/'∾⊑•args

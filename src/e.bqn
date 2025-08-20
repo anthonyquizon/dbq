@@ -18,7 +18,6 @@ prompt←"    "
 asc←"`1234567890-=~!@#$%^&*()_+qwertyuiop[]QWERTYUIOP{}asdfghjkl;''ASDFGHJKL:""|zxcvbnm,./ZXCVBNM<>? "
 uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽𝕨∊↑∧y⊔⊏⊐π←→↙𝕎⍷𝕣⍋YU⊑⊒⍳⊣⊢⍉𝕤↕𝕗𝕘⊸∘○⟜⋄↩\↖𝕊D𝔽𝔾«J⌾»·˙|⥊𝕩↓∨⌊n≡∾≍≠⋈𝕏C⍒⌈N≢≤≥⇐‿"
 
-# imports: filename→⟨result, source code⟩
 imports←⟨⟩ •HashMap ⟨⟩ 
 
 ctx‿dbg ← {𝕊:{
@@ -94,59 +93,65 @@ VMCatch⇐{𝕊 ·:
 }
 
 _PreHook←{f _𝕣 pos: 
-  ⟨cm,src,line,break⟩←imports.Get file←ctx.Peek @ ⋄ bc‿·‿·‿·‿loc‿·←cm
+  ⟨cm,src,cols,line,break⟩←imports.Get file←ctx.Peek @ ⋄ bc‿·‿·‿·‿loc‿·←cm
 
-  sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src
-  l←1+line⊑˜pos⊑⊑loc       # line
-  ln←(l-1)⊑sl
+  {𝕊: 
+    sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src
+    o←|-´(pos-1)⊑¨loc     # offset 
+    c←cols⊑˜⊑(pos-1)⊑¨loc # column
+    l←1+line⊑˜pos⊑⊑loc       # line
 
-  #•Show "hook"‿pos
-  #•Show pos⊑bc
-  #•Show pos⊑break
-  #⟨line, cols, cm,s⟩←imports.Get f 
+    # TODO highlight line
+    ln←(l-1)⊑sl
+    h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
+    io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩
+    io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h,magenta,m,reset,t⟩
 
-  #•Show pos⊏line
-  {𝕊: Repl f}⍟⊣ pos⊑break
+    Repl f
+  }⍟⊣ ∨´pos⍷break
+
   dbg.Push ⟨file,pos⟩ 
 }
 
 # Hooks to run in VM
 hooks←{
   _Pre⇐_PreHook
-  _Post⇐{· _𝕣 ·: 𝕩}
   Err⇐{VMCatch 𝕩 ⋄ Repl 𝕩 }
 }
 
+hook_ops←⟨
+  16,17,20,21,26,27,   # Application
+  18,19,23,22          # Application with Nothing
+  47,48,49,50,51       # Assignment
+⟩
+
 # Wrap namespace to vm compatable namespace 
-Import ⇐ {
+Import ← {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
-; 𝕨 𝕊 ⟨f⇐f⟩ : imports.Has f ? 
-    ≠⟜@◶⟨𝕨⊸𝕊⟜𝕩,⊢⟩ ⊑imports.Get f # if imports result is not realized
+; 𝕨 𝕊 ⟨f⇐f⟩ : imports.Has f ? (imports.Get f).Get @
 ; 𝕨 𝕊 ⟨f⇐f⟩ : 
     s←•file.Chars f 
     cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸(•Exit _CmpCatch)) s
-    ·‿·‿·‿·‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
+    bc‿·‿·‿·‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
 
-    #bc‿·‿·‿·‿·‿·←cm
-    #break ← /(∨´"??"⊸⍷)¨s⊔˜+`s=lf # break point line numbers
-    #line  ← +`s=lf 
-    #•SHow break
-    #•Show »⊸<break∊˜i⊏line
-    #•SHow [i⊏line, i, bc]
-    #•SHow [i⊏line, i, bc, i⊏s]
-    #•Show i⊏line
+    # construct break points
+    l←+`s=lf                    # lines
+    m←bc∊hook_ops               # mask of valid break positions
+    bp←/(∨´"??"⊸⍷)¨s⊔˜+`s=lf    # find lines with break point marks
+    bp↩bp∊˜i⊏l                  # map to bytecode positions
+    bp↩bp∧(bc≠6)                # separate by pop instructions (6)
+    bp↩⊑¨1↓(↕≠bc)⊔˜m∧bp×+`»⊸<bp # break point indices
 
-    #•SHow [↕≠bc,bc,(i⊏(+`s=lf))∊/(∨´"??"⊸⍷)¨s⊔˜+`s=lf]
     # Saved data for imports
     ns←{
-      line  ⇐ +`s=lf 
-      cols  ⇐ ∾(↕≠)¨⊔˜+`s=@+10 
-      break ⇐ (i⊏line)∊/(∨´"??"⊸⍷)¨s⊔˜+`s=lf # break point bytecode mask - accessed by pos
-      cm    ⇐ cm                                # compilation result
-      src   ⇐ s                                 # raw source code (helps for debugging)
-      ret   ⇐ @                                 # return result - updated after VM run
+      line  ⇐ l                 # delete?
+      cols  ⇐ ∾(↕≠)¨⊔˜+`s=@+10  # delete?
+      break ⇐ bp                # break point bytecode mask - accessed by pos
+      cm    ⇐ cm                # compilation result
+      src   ⇐ s                 # raw source code (helps for debugging)
 
-      SetRet⇐{ ret↩𝕩 }
+      Get    ⇐ !∘"Import result referenced before completion"
+      SetRet ⇐ {𝕊 v: Get↩{𝕊:v}}
     }
 
     ctx.Push f
@@ -160,6 +165,11 @@ Import ⇐ {
     𝕨 𝕊 {f⇐f}
 }
 
+Run ⇐ {
+  Import 𝕩
+  io.term.OutRaw •ToUTF8 lf∾˜"Done"
+}
+
 # f: lazy function to construct hashmap of variables
 Repl⇐{𝕊 f:
   io.term.RawMode 1
@@ -167,29 +177,32 @@ Repl⇐{𝕊 f:
   io.term.Flush@
 
   vmap←F @ ⋄ ch←⟨⟩ ⋄ ps←0 # vmap: variable mappings. ch: character buffer. ps: cursor offset
-  hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄Err⇐VMCatch}
+  hooks←{_Pre⇐{_𝕣:@}⋄Err⇐VMCatch}
 
-  Cmd←{ch𝕊·:
-    io.term.OutRaw clear
-    in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables
-    cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
-    {@:1; io.Out hooks‿vmap vm.Eval 𝕩} cm
-    1
+  Cmd←{
+    ch 𝕊·: ""≡((∨`∧∨⟜«)' '⊸≠)⊸/ch?1  # ignore empty statements
+  ; ch 𝕊·:
+      io.term.OutRaw clear
+      in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables
+      cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
+      {@:1; io.Out hooks‿vmap vm.Eval 𝕩} cm
+      1
   }
 
   Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch} # add 𝕩 into ch at ps position with 𝕨 deletions
 
   Map←{ # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩ 
-    𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          1   ⟩ # arrow left
-  ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      1   ⟩ # arrow right
-  ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd⟩ # enter and run command
-  ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          1   ⟩ # backspace
-  ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               1   ⟩ # ctrl+u
-  ; 𝕩:𝕩≡≍@+3               ? ⟨⟨⟩,            0,               0   ⟩ # ctrl+c
-  ; 𝕩:0=≠ch                ? ⟨𝕩,             1,               1   ⟩
+    𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          1       ⟩ # arrow left
+  ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      1       ⟩ # arrow right
+  ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd  ⟩ # enter and run command
+  ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          1       ⟩ # backspace
+  ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               1       ⟩ # ctrl+u
+  ; 𝕩:𝕩≡≍@+11              ? ⟨⟨⟩,            0,               0       ⟩ # ctrl+k continue
+  ; 𝕩:𝕩≡≍@+3               ? ⟨⟨⟩,            0,               •Exit⟜0 ⟩ # ctrl+c
+  ; 𝕩:0=≠ch                ? ⟨𝕩,             1,               1       ⟩
   ; 𝕩:'\'=ch(⊣⊑˜0⌈≠⊸⌊)ps-1 ? z←uni/˜asc∊𝕩
-                             ⟨ch0←1 Patch z, (≠z)+ps-1,       1   ⟩ # replace '/' with unicode chars
-  ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,            1   ⟩ 
+                             ⟨ch0←1 Patch z, (≠z)+ps-1,       1       ⟩ # replace '/' with unicode chars
+  ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,            1       ⟩ 
   }
 
   # if e consume chars until letter (ANSI format for keypimportsses)
@@ -212,4 +225,7 @@ Repl⇐{𝕊 f:
     io.term.Flush@
     ret
   }•_while_ ⊢ 1
+
+  io.term.OutRaw •ToUTF8 lf∾˜"Continue"
+  io.term.OutRaw •ToUTF8 lf∾˜""
 }
