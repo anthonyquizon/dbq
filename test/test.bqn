@@ -8,20 +8,22 @@ Test←{ f 𝕊 inb‿exp:
   outb←⟨⟩
 
   ⟨Import⟩←{
-    Out ⇐{•Show𝕩⋄outb∾⟜⟨•Fmt𝕩⟩↩}
-    In  ⇐{𝕊:t←⊑1↑inb⋄inb↩1↓inb⋄t}
+    Out  ⇐ {outb∾⟜⟨•Fmt𝕩⟩↩}
+    In   ⇐ {𝕊:t←⊑1↑inb⋄inb↩1↓inb⋄t}
+    term ⇐ {
+      OutRaw  ⇐ {𝕩}
+      Flush   ⇐ {𝕩}
+      RawMode ⇐ {𝕩}
+    }
   } •Import "../src/e.bqn"
 
   Import •path∾'/'∾f
-
-  •term.OutRaw ≍lf
-  •term.Flush@ 
-  •term.RawMode 0
 
   ! outb≡exp
   •Out "=== " ∾ f ∾ " ok ✓ ==="
 }
 
-"ex.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩
-"ex.c.bqn" Test ⟨"a","𝕨"⟩‿⟨"111", "111"⟩
+"ex.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables
+"ex.c.bqn" Test ⟨"a","𝕨", "b", "𝕩"⟩‿⟨"111", "111","555","555"⟩  # should print out argument variables in function
+#"ex.e.bqn" Test ⟨⟩‿⟨⟩  # should print out argument variables in function
 

@@ -11,6 +11,7 @@ red     ←e∾"[31m"
 magenta ←e∾"[35m"
 boldRed ←e∾"[1;31m"
 reset   ←e∾"[0m"
+hs←'#' # avoid syntax highlighting issues in editor
 
 prompt←"    "
 
@@ -63,15 +64,15 @@ System ←{
 _CmpCatch←{ f Exit _𝕣 src:
   l←+`src=lf ⋄ sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src                  # l: line numbers, sl: source file in lines
   ⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
-  •Out "Error: "∾msg
-  •Out f∾":"∾ •Fmt s⊑sl
-  •Out (s⊑l)⊑sl
-  •Out ⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
+  io.term.OutRaw lf∾˜"Error: "∾msg
+  io.term.OutRaw lf∾˜f∾":"∾ •Fmt s⊑sl
+  io.term.OutRaw lf∾˜(s⊑l)⊑sl
+  io.term.OutRaw lf∾˜⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
   Exit 1
 }
 
 VMCatch⇐{𝕊 ·:
-  •Out ∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
+  io.term.OutRaw lf∾˜∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
   {𝕊 f‿pos : 
     ⟨·,cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
     c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf
@@ -87,9 +88,9 @@ VMCatch⇐{𝕊 ·:
     #•Out ∾⟨"  ",h,boldRed,m,reset,t⟩
 
     #-- cbqn like stack trace --
-    •Out ∾⟨f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l⟩
-    •Out ∾⟨"  ",(l-1)⊑sl⟩
-    •Out ∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
+    io.term.OutRaw lf∾˜∾⟨f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l⟩
+    io.term.OutRaw lf∾˜∾⟨"  ",(l-1)⊑sl⟩
+    io.term.OutRaw lf∾˜∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
   }¨dbg.s
 }
 
@@ -109,6 +110,13 @@ Import ⇐ {
     s←•file.Chars f 
     ctx.Push f
       cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸(•Exit _CmpCatch)) s
+      l←s⊔˜+`s=lf
+      #c‿q‿·←{𝕩⊔˜+`(=⟜hs∨(≠∘⊢↑"??"⊸⍷))𝕩}¨l # c: code, q: query
+      #q↩((∨`∧∨⟜«)' '⊸≠)⊸/1⊸↓q
+      #•SHow (≠a)↑q⍷c
+      #•SHow cm
+
+
       # TODO preparse break points via compiled bytecodes?
       f imports.Set ⟨@,cm,s⟩
       f imports.Set ⟨r←hooks‿{Has⇐0˙} vm.Eval cm,cm,s⟩
@@ -122,13 +130,13 @@ Import ⇐ {
 
 # f: lazy function to construct hashmap of variables
 Repl⇐{𝕊 f:
-  •term.RawMode 1
-  •term.OutRaw •ToUTF8 prompt
-  •term.Flush@
+  io.term.RawMode 1
+  io.term.OutRaw •ToUTF8 prompt
+  io.term.Flush@
 
   vmap←F @ ⋄ ch←⟨⟩ ⋄ ps←0 # vmap: variable mappings. ch: character buffer. ps: cursor offset
   Cmd←{ch𝕊·:
-    •term.OutRaw clear
+    io.term.OutRaw clear
     hooks←{Pre⇐Post⇐{𝕩}⋄Err⇐VMCatch}
     in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables
     cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
@@ -164,11 +172,11 @@ Repl⇐{𝕊 f:
     eff←@⋄ch‿ps‿Eff↩Map Input@
     ret←Eff @
 
-    •term.OutRaw clear # clear line and set to start of line
-    •term.OutRaw •ToUTF8 prompt
-    •term.OutRaw •ToUTF8 ch
-    •term.OutRaw e∾"["∾(•Fmt (≠prompt)+ps+1)∾"G"
-    •term.Flush@
+    io.term.OutRaw clear # clear line and set to start of line
+    io.term.OutRaw •ToUTF8 prompt
+    io.term.OutRaw •ToUTF8 ch
+    io.term.OutRaw e∾"["∾(•Fmt (≠prompt)+ps+1)∾"G"
+    io.term.Flush@
     ret
   }•_while_ ⊢ 1
 }

@@ -1,6 +1,7 @@
 ⟨Import,Repl⟩←{
-  Out ⇐•Out
-  In  ⇐•term.CharB
+  Out  ⇐ •Show
+  In   ⇐ •term.CharB
+  term ⇐ •term
 } •Import "./e.bqn"
 
 usage←∾∾⟜(@+10)¨⟨
