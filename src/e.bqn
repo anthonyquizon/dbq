@@ -11,7 +11,8 @@ red     ←e∾"[31m"
 magenta ←e∾"[35m"
 boldRed ←e∾"[1;31m"
 reset   ←e∾"[0m"
-hs←'#' # avoid syntax highlighting issues in editor
+
+flag_step←0
 
 prompt←"    "
 
@@ -19,6 +20,13 @@ asc←"`1234567890-=~!@#$%^&*()_+qwertyuiop[]QWERTYUIOP{}asdfghjkl;''ASDFGHJKL:"
 uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽𝕨∊↑∧y⊔⊏⊐π←→↙𝕎⍷𝕣⍋YU⊑⊒⍳⊣⊢⍉𝕤↕𝕗𝕘⊸∘○⟜⋄↩\↖𝕊D𝔽𝔾«J⌾»·˙|⥊𝕩↓∨⌊n≡∾≍≠⋈𝕏C⍒⌈N≢≤≥⇐‿"
 
 imports←⟨⟩ •HashMap ⟨⟩ 
+
+# opt codes to break for
+hook_ops←⟨
+  16,17,20,21,26,27,   # Application
+  18,19,23,22          # Application with Nothing
+  47,48,49,50,51       # Assignment
+⟩
 
 ctx‿dbg ← {𝕊:{
   s    ⇐ ⟨⟩
@@ -108,7 +116,7 @@ _PreHook←{f _𝕣 pos:
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h,magenta,m,reset,t⟩
 
     Repl f
-  }⍟⊣ ∨´pos⍷break
+  }⍟⊣ flag_step∨∨´pos⍷break
 
   dbg.Push ⟨file,pos⟩ 
 }
@@ -118,12 +126,6 @@ hooks←{
   _Pre⇐_PreHook
   Err⇐{VMCatch 𝕩 ⋄ Repl 𝕩 }
 }
-
-hook_ops←⟨
-  16,17,20,21,26,27,   # Application
-  18,19,23,22          # Application with Nothing
-  47,48,49,50,51       # Assignment
-⟩
 
 # Wrap namespace to vm compatable namespace 
 Import ← {
@@ -140,7 +142,8 @@ Import ← {
     bp←/(∨´"??"⊸⍷)¨s⊔˜+`s=lf    # find lines with break point marks
     bp↩bp∊˜i⊏l                  # map to bytecode positions
     bp↩bp∧(bc≠6)                # separate by pop instructions (6)
-    bp↩⊑¨1↓(↕≠bc)⊔˜m∧bp×+`»⊸<bp # break point indices
+    bp↩1↓(↕≠bc)⊔˜m∧bp×+`»⊸<bp   # break point index groups
+    bp↩⊑¨bp/˜(0≠≠)¨bp
 
     # Saved data for imports
     ns←{
@@ -178,31 +181,39 @@ Repl⇐{𝕊 f:
 
   vmap←F @ ⋄ ch←⟨⟩ ⋄ ps←0 # vmap: variable mappings. ch: character buffer. ps: cursor offset
   hooks←{_Pre⇐{_𝕣:@}⋄Err⇐VMCatch}
+  flag_step↩0
 
   Cmd←{
     ch 𝕊·: ""≡((∨`∧∨⟜«)' '⊸≠)⊸/ch?1  # ignore empty statements
   ; ch 𝕊·:
       io.term.OutRaw clear
+      io.term.OutRaw •ToUTF8 lf∾˜prompt∾ch
       in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables
       cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
       {@:1; io.Out hooks‿vmap vm.Eval 𝕩} cm
       1
   }
 
+  Continue←{𝕊:io.term.OutRaw lf∾˜"Continue"⋄flag_step↩0⋄0}
+  Next    ←{𝕊:io.term.OutRaw lf∾˜"Next"    ⋄flag_step↩1⋄0} 
+
   Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch} # add 𝕩 into ch at ps position with 𝕨 deletions
 
+  # Tip: use `cat -v` in the terminal to find out key codes
   Map←{ # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩ 
-    𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          1       ⟩ # arrow left
-  ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      1       ⟩ # arrow right
-  ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd  ⟩ # enter and run command
-  ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          1       ⟩ # backspace
-  ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               1       ⟩ # ctrl+u
-  ; 𝕩:𝕩≡≍@+11              ? ⟨⟨⟩,            0,               0       ⟩ # ctrl+k continue
-  ; 𝕩:𝕩≡≍@+3               ? ⟨⟨⟩,            0,               •Exit⟜0 ⟩ # ctrl+c
-  ; 𝕩:0=≠ch                ? ⟨𝕩,             1,               1       ⟩
+    𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          1          ⟩ # arrow left
+  ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      1          ⟩ # arrow right
+  ; 𝕩:𝕩≡e∾"[46;5u"         ? ⟨⟨⟩,            0,               Continue   ⟩ # ctrl+. continue
+  ; 𝕩:𝕩≡e∾"[44;5u"         ? ⟨⟨⟩,            0,               Continue   ⟩ # ctrl+, continue
+  ; 𝕩:𝕩≡e∾"[59;5u"         ? ⟨⟨⟩,            0,               Next       ⟩ # ctrl+; next bytecode?
+  ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd     ⟩ # enter and run command
+  ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          1          ⟩ # backspace
+  ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               1          ⟩ # ctrl+u
+  ; 𝕩:𝕩≡≍@+3               ? ⟨⟨⟩,            0,               {𝕊:•Exit 0}⟩ # ctrl+c
+  ; 𝕩:0=≠ch                ? ⟨𝕩,             1,               1          ⟩
   ; 𝕩:'\'=ch(⊣⊑˜0⌈≠⊸⌊)ps-1 ? z←uni/˜asc∊𝕩
-                             ⟨ch0←1 Patch z, (≠z)+ps-1,       1       ⟩ # replace '/' with unicode chars
-  ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,            1       ⟩ 
+                             ⟨ch0←1 Patch z, (≠z)+ps-1,       1          ⟩ # replace '/' with unicode chars
+  ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,            1          ⟩ 
   }
 
   # if e consume chars until letter (ANSI format for keypimportsses)
@@ -226,6 +237,5 @@ Repl⇐{𝕊 f:
     ret
   }•_while_ ⊢ 1
 
-  io.term.OutRaw •ToUTF8 lf∾˜"Continue"
   io.term.OutRaw •ToUTF8 lf∾˜""
 }

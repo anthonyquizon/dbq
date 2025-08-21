@@ -1,5 +1,5 @@
 lf←@+10 # line feed
-cl←@+3  # ctrl+c
+cont←@+11  # ctrl+k
 e←@+27 
 
 term←{
@@ -9,7 +9,7 @@ term←{
 }
 
 Test←{ f 𝕊 inb‿exp:
-  inb↩∾cl∾˜lf∾˜¨inb ⋄ outb←⟨⟩
+  inb↩∾(cont¨↕10)∾˜lf∾˜¨inb ⋄ outb←⟨⟩ # inb append with mulitple continues to eventually exit program without running ctrl+
   ⟨Run⟩←{
     Out  ⇐ {outb∾⟜⟨•Fmt𝕩⟩↩}
     In   ⇐ {𝕊:t←⊑1↑inb⋄inb↩1↓inb⋄t}
@@ -21,9 +21,9 @@ Test←{ f 𝕊 inb‿exp:
   ! outb≡exp
 }
 
-#"ex.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables
-#"ex.c.bqn" Test ⟨"a","𝕨", "b", "𝕩"⟩‿⟨"111", "111","555","555"⟩  # should print out argument variables in function
+#"cases/error.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables
+#"cases/error.c.bqn" Test ⟨"a","𝕨", "b", "𝕩"⟩‿⟨"111", "111","555","555"⟩  # should print out argument variables in function
 # TODO test imports
-"ex.e.bqn" Test ⟨"a","b"⟩‿⟨"10", "20"⟩                          # should print out argument variables in break point position
+"cases/break.a.bqn" Test ⟨"a","b"⟩‿⟨"10", "20"⟩                          # should print out argument variables in break point position
 
 •Out "ok ✓"
