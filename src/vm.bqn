@@ -119,7 +119,7 @@ skipMark ← {⇐}  # Indicates body aborted instead of returning
 
 # Execution stack: every body evaluation makes one of these
 MakeStack ← {
-  s ← 𝕩                          # Stack (a list)
+  s ⇐ 𝕩                          # Stack (a list)
   cont ⇐ 1                       # Whether to continue execution
   rslt ⇐ skipMark                # Result: skipMark to abort current body
   Push ⇐ {s∾↩<𝕩}                 # Push a value
@@ -147,7 +147,7 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   13‿{i←𝕏@ ⋄ {s𝕊e: s.Push > ⌽s.Pop i } }
   14‿{i←𝕏@ ⋄ {s𝕊e: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
   # Application
-  16‿(       {s𝕊e: s.Push {   f‿x:   F x }   s.Pop 2 }˙) 
+  16‿(       {s𝕊e: s.Push {   f‿x: F x }   s.Pop 2 }˙) 
   17‿(       {s𝕊e: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙) 
   20‿(       {s𝕊e: s.Push {   g‿h:   G H }   s.Pop 2 }˙)
   21‿(       {s𝕊e: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)

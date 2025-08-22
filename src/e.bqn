@@ -28,6 +28,8 @@ hook_ops←⟨
   47,48,49,50,51       # Assignment
 ⟩
 
+Trim←((∨`∧∨⟜«)' '⊸≠)⊸/
+
 ctx‿dbg ← {𝕊:{
   s    ⇐ ⟨⟩
   Push ⇐ {𝕊:s∾↩<𝕩}
@@ -72,26 +74,26 @@ _CmpCatch←{ f Exit _𝕣 src:
   l←+`src=lf ⋄ sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src                  # l: line numbers, sl: source file in lines
   ⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
   io.term.OutRaw lf∾˜"Error: "∾msg
-  io.term.OutRaw lf∾˜f∾":"∾ •Fmt s⊑sl
+  #io.term.OutRaw lf∾˜f∾":"∾ •Fmt s⊑sl
   io.term.OutRaw lf∾˜(s⊑l)⊑sl
   io.term.OutRaw lf∾˜⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
   Exit 1
 }
 
 VMCatch⇐{𝕊 ·:
-  io.term.OutRaw lf∾˜∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
+  io.term.OutRaw •ToUTF8 lf∾˜∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
   {𝕊 f‿pos : 
     𝕩
-    #⟨line, cols, cm,s⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
+    ⟨line, cm⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
     #c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf ⋄ sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s 
     #o←|-´(pos-1)⊑¨loc     # offset 
     #c↩c⊑˜⊑(pos-1)⊑¨loc # column
     #l↩1+l⊑˜pos⊑⊑loc       # line
 
-    ##ln←(l-1)⊑sl
-    ##h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
-    ##•Out ∾⟨magenta,f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l,reset⟩
-    ##•Out ∾⟨"  ",h,boldRed,m,reset,t⟩
+    #ln←(l-1)⊑sl
+    #h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
+    #•Out ∾⟨magenta,f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l,reset⟩
+    #•Out ∾⟨"  ",h,boldRed,m,reset,t⟩
 
     ##-- cbqn like stack trace --
     #io.term.OutRaw lf∾˜∾⟨f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l⟩
@@ -105,11 +107,13 @@ _PreHook←{f _𝕣 pos:
 
   {𝕊: 
     sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src
-    o←|-´(pos-1)⊑¨loc     # offset 
-    c←cols⊑˜⊑(pos-1)⊑¨loc # column
+    o←|-´pos⊑¨loc     # offset 
+    c←cols⊑˜⊑pos⊑¨loc # column
     l←1+line⊑˜pos⊑⊑loc       # line
 
     # TODO highlight line
+    # TODO print previous and next lines
+
     ln←(l-1)⊑sl
     h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩
@@ -184,7 +188,9 @@ Repl⇐{𝕊 f:
   flag_step↩0
 
   Cmd←{
-    ch 𝕊·: ""≡((∨`∧∨⟜«)' '⊸≠)⊸/ch?1  # ignore empty statements
+    ch 𝕊·: ""≡Trim ch? # ignore empty statements
+      io.term.OutRaw •ToUTF8 lf∾˜prompt
+      1  
   ; ch 𝕊·:
       io.term.OutRaw clear
       io.term.OutRaw •ToUTF8 lf∾˜prompt∾ch
@@ -195,7 +201,7 @@ Repl⇐{𝕊 f:
   }
 
   Continue←{𝕊:io.term.OutRaw lf∾˜"Continue"⋄flag_step↩0⋄0}
-  Next    ←{𝕊:io.term.OutRaw lf∾˜"Next"    ⋄flag_step↩1⋄0} 
+  Next    ←{𝕊:flag_step↩1⋄0} 
 
   Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch} # add 𝕩 into ch at ps position with 𝕨 deletions
 
@@ -203,9 +209,8 @@ Repl⇐{𝕊 f:
   Map←{ # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩ 
     𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          1          ⟩ # arrow left
   ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      1          ⟩ # arrow right
-  ; 𝕩:𝕩≡e∾"[46;5u"         ? ⟨⟨⟩,            0,               Continue   ⟩ # ctrl+. continue
-  ; 𝕩:𝕩≡e∾"[44;5u"         ? ⟨⟨⟩,            0,               Continue   ⟩ # ctrl+, continue
-  ; 𝕩:𝕩≡e∾"[59;5u"         ? ⟨⟨⟩,            0,               Next       ⟩ # ctrl+; next bytecode?
+  ; 𝕩:𝕩≡e∾"[44;5u"         ? ⟨⟨⟩,            0,               Continue   ⟩ # ctrl+. continue
+  ; 𝕩:𝕩≡e∾"[46;5u"         ? ⟨⟨⟩,            0,               Next       ⟩ # ctrl+; next bytecode
   ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd     ⟩ # enter and run command
   ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          1          ⟩ # backspace
   ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               1          ⟩ # ctrl+u
