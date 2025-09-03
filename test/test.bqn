@@ -1,6 +1,6 @@
 lf←@+10 # line feed
-cont←@+11  # ctrl+k
 e←@+27 
+cont←e∾"[44;5u"  # ctrl+.
 
 term←{
   OutRaw  ⇐ {𝕩}

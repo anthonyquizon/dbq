@@ -136,24 +136,26 @@ Import ← {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
 ; 𝕨 𝕊 ⟨f⇐f⟩ : imports.Has f ? (imports.Get f).Get @
 ; 𝕨 𝕊 ⟨f⇐f⟩ : 
+    h←'#' # avoid breaking vims syntax highlighting
     s←•file.Chars f 
     cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸(•Exit _CmpCatch)) s
     bc‿·‿·‿·‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
 
     # construct break points
-    l←+`s=lf                    # lines
-    m←bc∊hook_ops               # mask of valid break positions
-    bp←/(∨´"??"⊸⍷)¨s⊔˜+`s=lf    # find lines with break point marks
-    bp↩bp∊˜i⊏l                  # map to bytecode positions
-    bp↩bp∧(bc≠6)                # separate by pop instructions (6)
-    bp↩1↓(↕≠bc)⊔˜m∧bp×+`»⊸<bp   # break point index groups
-    bp↩⊑¨bp/˜(0≠≠)¨bp
+    l←+`s=lf                           # lines
+    m←bc∊hook_ops                      # mask of valid break positions
+    g←l⊔s                             
+    q←{1⊑2↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # c: code, q: query
+    q↩∾g{(≠𝕨)↑(Trim 1↓𝕩)⍷𝕨}¨q           # find break point marks (whole line if non matches)
+    q↩(i⊏q)∧bc≠6                # separate by pop instructions (6)
+    q↩1↓(↕≠q)⊔˜m∧q×+`»⊸<q # group break point into index groups 
+    q↩⊑¨q/˜(0≠≠)¨q # break only on first match in line (ie. take first of break group)
 
     # Saved data for imports
     ns←{
       line  ⇐ l                 # delete?
       cols  ⇐ ∾(↕≠)¨⊔˜+`s=@+10  # delete?
-      break ⇐ bp                # break point bytecode mask - accessed by pos
+      break ⇐ q                # break point bytecode mask - accessed by pos
       cm    ⇐ cm                # compilation result
       src   ⇐ s                 # raw source code (helps for debugging)
 
@@ -211,6 +213,7 @@ Repl⇐{𝕊 f:
   ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      1          ⟩ # arrow right
   ; 𝕩:𝕩≡e∾"[44;5u"         ? ⟨⟨⟩,            0,               Continue   ⟩ # ctrl+. continue
   ; 𝕩:𝕩≡e∾"[46;5u"         ? ⟨⟨⟩,            0,               Next       ⟩ # ctrl+; next bytecode
+  ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,            0,               1          ⟩ # ctrl+; next bytecode
   ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd     ⟩ # enter and run command
   ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          1          ⟩ # backspace
   ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               1          ⟩ # ctrl+u
