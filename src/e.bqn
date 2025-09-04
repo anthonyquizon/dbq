@@ -146,7 +146,7 @@ Import ← {
     m←bc∊hook_ops                      # mask of valid break positions
     g←l⊔s                             
     q←{1⊑2↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # c: code, q: query
-    q↩∾g{(≠𝕨)↑(Trim 1↓𝕩)⍷𝕨}¨q           # find break point marks (whole line if non matches)
+    q↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 1↓𝕩)⍷𝕨}¨q           # find break point marks (whole line if non matches)
     q↩(i⊏q)∧bc≠6                # separate by pop instructions (6)
     q↩1↓(↕≠q)⊔˜m∧q×+`»⊸<q # group break point into index groups 
     q↩⊑¨q/˜(0≠≠)¨q # break only on first match in line (ie. take first of break group)
