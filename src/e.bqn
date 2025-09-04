@@ -60,51 +60,65 @@ syslist←⟨
     "file"‿sysfile
     "flines"‿sysfile.Lines
     "math"‿•math
+    "term"‿•term
+    "wdpath"‿•wdpath
+    "currenterror"‿•CurrentError
+    "hashmap"‿•HashMap
+    "toutf8"‿•ToUTF8
     "ns"  ‿•ns
     "show"‿•Show
     "bqn"‿•Bqn
+    "fmt"‿•Fmt
+    "primitives"‿•Primitives
     "repr"‿•Repr
     "type"‿•Type
 ⟩
 
+# find system function
 System ←{
-  F ← {                                                                                 # find system function
-    i ← 𝕨⊐𝕩 ⋄ {!∾⟨"Unknown system value",(1≠≠𝕩)/"s",":"⟩∾" •"⊸∾¨𝕩}∘/⟜𝕩⍟(∨´) i=≠𝕨 ⋄ i
+  F ← {
+    i ← 𝕨⊐𝕩
+    {!∾⟨"Unknown system value",(1≠≠𝕩)/"s",":"⟩∾" •"⊸∾¨𝕩}∘/⟜𝕩⍟(∨´) i=≠𝕨 
+    i
   }
   {𝕨⊸F⊏𝕩˙}´∾<˘⋈˘⍉>syslist∾⟨"import"‿Import, "args"‿𝕩⟩
 }
 
-# shows compiler errors
-_CmpCatch←{ f Exit _𝕣 src:
-  l←+`src=lf ⋄ sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src                  # l: line numbers, sl: source file in lines
-  ⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
-  io.term.OutRaw lf∾˜"Error: "∾msg
-  #io.term.OutRaw lf∾˜f∾":"∾ •Fmt s⊑sl
-  io.term.OutRaw lf∾˜(s⊑l)⊑sl
-  io.term.OutRaw lf∾˜⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
-  Exit 1
-}
-
-VMCatch⇐{𝕊 ·:
-  io.term.OutRaw •ToUTF8 lf∾˜∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
+PrintStackTrace←{𝕊:
   {𝕊 f‿pos : 
     𝕩
     ⟨line, cols, src, cm⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
     sl←(lf⊸≠)⊸/¨src⊔˜»line
     o←|-´(pos-1)⊑¨loc     # offset 
     c←cols⊑˜⊑(pos-1)⊑¨loc # column
-    l←1+line⊑˜pos⊑⊑loc       # line
-
-    #ln←(l-1)⊑sl
-    #h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
-    #•Out ∾⟨magenta,f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l,reset⟩
-    #•Out ∾⟨"  ",h,boldRed,m,reset,t⟩
+    l←1+line⊑˜pos⊑⊑loc    # line
 
     ##-- cbqn like stack trace --
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l⟩
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",(l-1)⊑sl⟩
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
   }¨dbg.s
+}
+
+# shows compiler errors
+_CmpCatch←{ f Exit _𝕣 src:
+  l←+`src=lf ⋄ sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src                  # l: line numbers, sl: source file in lines
+
+  { 𝕊 loc‿msg:
+      s‿e←loc↩⥊loc
+      io.term.OutRaw •ToUTF8 lf∾˜"Error: "∾msg
+      io.term.OutRaw •ToUTF8 lf∾˜(s⊑l)⊑sl
+      io.term.OutRaw •ToUTF8 lf∾˜⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
+  ; 𝕊 𝕩: 
+      io.term.OutRaw •ToUTF8 lf∾˜"Error: "∾(•Fmt 𝕩)
+      PrintStackTrace @
+  }•CurrentError@
+  Exit 1
+}
+
+VMCatch⇐{𝕊 ·:
+  io.term.OutRaw •ToUTF8 lf∾˜∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
+  PrintStackTrace @
 }
 
 _PreHook←{f _𝕣 pos: 
