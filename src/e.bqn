@@ -69,6 +69,7 @@ syslist←⟨
     "show"‿•Show
     "bqn"‿•Bqn
     "fmt"‿•Fmt
+    "makerand"‿•MakeRand
     "primitives"‿•Primitives
     "repr"‿•Repr
     "type"‿•Type
@@ -221,7 +222,7 @@ Repl⇐{𝕊 f:
   ; ch 𝕊·:
       io.term.OutRaw clear
       io.term.OutRaw •ToUTF8 lf∾˜prompt∾ch
-      in←"x‿w←•args ⋄ w {𝕊:"∾ch∾"} x" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables
+      in←"x__arg‿w__arg←•args ⋄ w__arg {𝕊:"∾ch∾"} x__arg" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables 
       cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
       {@:1; io.Out hooks‿vmap vm.Eval 𝕩} cm
       1
