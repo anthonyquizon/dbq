@@ -196,6 +196,7 @@ RunBC ← { hooks𝕊bc‿pos‿env‿args:  # bytecode, starting position, envi
 
     f hooks._Pre (pos-1)
     stack Op⎊{𝕊:hooks.Err f} env
+    f hooks._Post (pos-1)
 
     stack.cont  # Changes to 0 on return or abort
   } •_while_ ⊢ 1

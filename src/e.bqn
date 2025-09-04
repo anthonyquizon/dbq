@@ -28,6 +28,11 @@ hook_ops←⟨
   47,48,49,50,51       # Assignment
 ⟩
 
+dbg_ops←⟨
+  16,17,20,21,26,27,   # Application
+  18,19,23,22          # Application with Nothing
+⟩
+
 Trim←((∨`∧∨⟜«)' '⊸≠)⊸/
 
 ctx‿dbg ← {𝕊:{
@@ -84,11 +89,11 @@ VMCatch⇐{𝕊 ·:
   io.term.OutRaw •ToUTF8 lf∾˜∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
   {𝕊 f‿pos : 
     𝕩
-    ⟨line, cm⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
-    #c←∾(↕≠)¨⊔˜+`s=@+10 ⋄ l←+`s=lf ⋄ sl←(lf⊸≠)⊸/¨s⊔˜»+`lf=s 
-    #o←|-´(pos-1)⊑¨loc     # offset 
-    #c↩c⊑˜⊑(pos-1)⊑¨loc # column
-    #l↩1+l⊑˜pos⊑⊑loc       # line
+    ⟨line, cols, src, cm⟩←imports.Get f ⋄ ·‿·‿·‿·‿loc‿·←cm
+    sl←(lf⊸≠)⊸/¨src⊔˜»line
+    o←|-´(pos-1)⊑¨loc     # offset 
+    c←cols⊑˜⊑(pos-1)⊑¨loc # column
+    l←1+line⊑˜pos⊑⊑loc       # line
 
     #ln←(l-1)⊑sl
     #h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
@@ -96,9 +101,9 @@ VMCatch⇐{𝕊 ·:
     #•Out ∾⟨"  ",h,boldRed,m,reset,t⟩
 
     ##-- cbqn like stack trace --
-    #io.term.OutRaw lf∾˜∾⟨f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l⟩
-    #io.term.OutRaw lf∾˜∾⟨"  ",(l-1)⊑sl⟩
-    #io.term.OutRaw lf∾˜∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
+    io.term.OutRaw •ToUTF8 lf∾˜∾⟨f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l⟩
+    io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",(l-1)⊑sl⟩
+    io.term.OutRaw •ToUTF8 lf∾˜∾⟨red, "  ",(' '¨↕c), '∧'¨↕o+1, reset⟩
   }¨dbg.s
 }
 
@@ -122,13 +127,19 @@ _PreHook←{f _𝕣 pos:
     Repl f
   }⍟⊣ flag_step∨∨´pos⍷break
 
-  dbg.Push ⟨file,pos⟩ 
+  {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
+}
+
+_PostHook←{f _𝕣 pos: 
+  ⟨cm⟩←imports.Get file←ctx.Peek @ ⋄ bc‿·‿·‿·‿loc‿·←cm
+  {𝕊: dbg.Pop 1}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
 
 # Hooks to run in VM
 hooks←{
-  _Pre⇐_PreHook
-  Err⇐{VMCatch 𝕩 ⋄ Repl 𝕩 }
+  _Pre  ⇐ _PreHook
+  _Post ⇐ _PostHook
+  Err   ⇐ {VMCatch 𝕩 ⋄ Repl 𝕩 }
 }
 
 # Wrap namespace to vm compatable namespace 
@@ -186,7 +197,7 @@ Repl⇐{𝕊 f:
   io.term.Flush@
 
   vmap←F @ ⋄ ch←⟨⟩ ⋄ ps←0 # vmap: variable mappings. ch: character buffer. ps: cursor offset
-  hooks←{_Pre⇐{_𝕣:@}⋄Err⇐VMCatch}
+  hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄Err⇐VMCatch}
   flag_step↩0
 
   Cmd←{
