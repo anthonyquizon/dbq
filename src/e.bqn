@@ -21,13 +21,6 @@ uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽�
 
 imports←⟨⟩ •HashMap ⟨⟩ 
 
-# opt codes to break for
-hook_ops←⟨
-  16,17,20,21,26,27,   # Application
-  18,19,23,22          # Application with Nothing
-  47,48,49,50,51       # Assignment
-⟩
-
 dbg_ops←⟨
   16,17,20,21,26,27,   # Application
   18,19,23,22          # Application with Nothing
@@ -122,8 +115,8 @@ VMCatch⇐{𝕊 ·:
   PrintStackTrace @
 }
 
-_PreHook←{f _𝕣 pos: 
-  ⟨cm,src,cols,line,break⟩←imports.Get file←ctx.Peek @ ⋄ bc‿·‿·‿·‿loc‿·←cm
+_PreHook←{vmap _𝕣 pos‿file: 
+  ⟨cm,src,cols,line,break⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
 
   {𝕊: 
     sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src
@@ -139,14 +132,14 @@ _PreHook←{f _𝕣 pos:
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h,magenta,m,reset,t⟩
 
-    Repl f
+    Repl vmap
   }⍟⊣ flag_step∨∨´pos⍷break
 
   {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
 
-_PostHook←{f _𝕣 pos: 
-  ⟨cm⟩←imports.Get file←ctx.Peek @ ⋄ bc‿·‿·‿·‿loc‿·←cm
+_PostHook←{· _𝕣 pos‿file: 
+  ⟨cm⟩←imports.Get file ⋄ bc‿·‿·‿·‿·‿·←cm
   {𝕊: dbg.Pop 1}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
 
@@ -160,28 +153,27 @@ hooks←{
 # Wrap namespace to vm compatable namespace 
 Import ← {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
-; 𝕨 𝕊 ⟨f⇐f⟩ : imports.Has f ? (imports.Get f).Get @
-; 𝕨 𝕊 ⟨f⇐f⟩ : 
+; 𝕨 𝕊 ⟨file⇐file⟩ : imports.Has file ? (imports.Get file).Get @
+; 𝕨 𝕊 ⟨file⇐file⟩ : 
     h←'#' # avoid breaking vims syntax highlighting
-    s←•file.Chars f 
-    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(f⊸(•Exit _CmpCatch)) s
+    s←•file.Chars file 
+    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(file⊸(•Exit _CmpCatch)) s
     bc‿·‿·‿·‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
 
     # construct break points
     l←+`s=lf                           # lines
-    m←bc∊hook_ops                      # mask of valid break positions
     g←l⊔s                             
     q←{1⊑2↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # c: code, q: query
-    q↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 1↓𝕩)⍷𝕨}¨q           # find break point marks (whole line if non matches)
+    q↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 1↓𝕩)⍷𝕨}¨q
     q↩(i⊏q)∧bc≠6                # separate by pop instructions (6)
-    q↩1↓(↕≠q)⊔˜m∧q×+`»⊸<q # group break point into index groups 
+    q↩1↓(↕≠q)⊔˜q×+`»⊸<q # group break point into index groups of valid break points
     q↩⊑¨q/˜(0≠≠)¨q # break only on first match in line (ie. take first of break group)
 
     # Saved data for imports
     ns←{
       line  ⇐ l                 # delete?
       cols  ⇐ ∾(↕≠)¨⊔˜+`s=@+10  # delete?
-      break ⇐ q                # break point bytecode mask - accessed by pos
+      break ⇐ q                 # break point bytecode mask - accessed by pos
       cm    ⇐ cm                # compilation result
       src   ⇐ s                 # raw source code (helps for debugging)
 
@@ -189,15 +181,15 @@ Import ← {
       SetRet ⇐ {𝕊 v: Get↩{𝕊:v}}
     }
 
-    ctx.Push f
-    f imports.Set ns
-    ns.SetRet ret←hooks‿{Has⇐0˙} vm.Eval cm
+    ctx.Push file
+    file imports.Set ns
+    ns.SetRet ret←hooks‿{Has⇐0˙}‿file vm.Eval cm
     ctx.Pop 1 
     ret
 ; 𝕨 𝕊 𝕩 :  # canonicalize filename
-    f←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
-    f↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @     # resolve relative file location
-    𝕨 𝕊 {f⇐f}
+    file←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
+    file↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @     # resolve relative file location
+    𝕨 𝕊 {file⇐file}
 }
 
 Run ⇐ {
@@ -206,12 +198,12 @@ Run ⇐ {
 }
 
 # f: lazy function to construct hashmap of variables
-Repl⇐{𝕊 f:
+Repl⇐{𝕊 vmap:
   io.term.RawMode 1
   io.term.OutRaw •ToUTF8 prompt
   io.term.Flush@
 
-  vmap←F @ ⋄ ch←⟨⟩ ⋄ ps←0 # vmap: variable mappings. ch: character buffer. ps: cursor offset
+  vmap↩Vmap @ ⋄ ch←⟨⟩ ⋄ ps←0 # vmap: variable mappings. ch: character buffer. ps: cursor offset
   hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄Err⇐VMCatch}
   flag_step↩0
 
@@ -224,7 +216,7 @@ Repl⇐{𝕊 f:
       io.term.OutRaw •ToUTF8 lf∾˜prompt∾ch
       in←"x__arg‿w__arg←•args ⋄ w__arg {𝕊:"∾ch∾"} x__arg" # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables 
       cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
-      {@:1; io.Out hooks‿vmap vm.Eval 𝕩} cm
+      {@:1; io.Out hooks‿vmap‿@ vm.Eval 𝕩} cm
       1
   }
 
@@ -237,9 +229,9 @@ Repl⇐{𝕊 f:
   Map←{ # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩ 
     𝕩:𝕩≡e∾"[D"             ? ⟨ch,            0⌈ps-1,          1          ⟩ # arrow left
   ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,            (≠ch)⌊ps+1,      1          ⟩ # arrow right
-  ; 𝕩:𝕩≡e∾"[44;5u"         ? ⟨⟨⟩,            0,               Continue   ⟩ # ctrl+. continue
   ; 𝕩:𝕩≡e∾"[46;5u"         ? ⟨⟨⟩,            0,               Next       ⟩ # ctrl+; next bytecode
-  ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,            0,               1          ⟩ # ctrl+; next bytecode
+  ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,            0,               1          ⟩ # 
+  ; 𝕩:𝕩≡e∾"[27;5;13~"        ? ⟨⟨⟩,           0,              Continue   ⟩ # ctrl+enter
   ; 𝕩:𝕩≡≍@+10              ? ⟨⟨⟩,            0,               ch⊸Cmd     ⟩ # enter and run command
   ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "",    0⌈ps-1,          1          ⟩ # backspace
   ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               1          ⟩ # ctrl+u
@@ -250,12 +242,12 @@ Repl⇐{𝕊 f:
   ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,            1          ⟩ 
   }
 
-  # if e consume chars until letter (ANSI format for keypimportsses)
+  # if e consume chars until letter (ANSI format parsing)
   Input←{
      𝕊@:𝕊io.In@
   ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.In@ 
   ;  𝕊𝕩:⟨𝕩⟩
-  ; e𝕊𝕩:⊑𝕩∊∾+⟜(↕26)¨"Aa"?𝕩
+  ; e𝕊𝕩:⊑𝕩∊∾'~'∾+⟜(↕26)¨"Aa"?𝕩
   ; e𝕊𝕩:𝕩∾e𝕊io.In@
   }
 

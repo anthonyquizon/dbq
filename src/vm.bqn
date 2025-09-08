@@ -177,7 +177,7 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
-MakeVarMap←{ # convert env to hashmap
+MakeVmap←{ # convert env to hashmap
   h 𝕊 ⟨vars⇐vars⋄parent⇐parent⟩:
     ({𝕩.n}¨vars) {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨{𝕩.v}¨vars
     h 𝕊 parent
@@ -185,18 +185,18 @@ MakeVarMap←{ # convert env to hashmap
 }
 
 # Evaluate a body
-RunBC ← { hooks𝕊bc‿pos‿env‿args:  # bytecode, starting position, environment
+RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   {𝕊:
     op ← (i←Next@) ⊑ ops
     op ↩ Op next
 
-    F←{𝕊: h←"𝕊𝕩𝕨" •HashMap 3↑args ⋄ h MakeVarMap env ⋄ h } # lazy function to construct variable map from env and args
+    Vmap←{𝕊: h←"𝕊𝕩𝕨" •HashMap 3↑args ⋄ h MakeVmap env ⋄ h } # lazy function to construct variable map from env and args
 
-    f hooks._Pre (pos-1)
-    stack Op⎊{𝕊:hooks.Err f} env
-    f hooks._Post (pos-1)
+    vmap hooks._Pre (pos-1)‿file
+    stack Op⎊{𝕊:hooks.Err file} env
+    vmap hooks._Post (pos-1)‿file
 
     stack.cont  # Changes to 0 on return or abort
   } •_while_ ⊢ 1
@@ -204,7 +204,7 @@ RunBC ← { hooks𝕊bc‿pos‿env‿args:  # bytecode, starting position, envi
 }
 
 # Evaluate a program, given the compiler output
-Eval⇐{ hooks‿vmap VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+Eval⇐{ hooks‿vmap‿file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts { # Wrap namespace to vm compatable namespace 
     𝕊 ns: 6≡•Type ns ?  Field⇐{p𝕊i: Get ⇐ {𝕊:ns •ns.Get i⊑p.names}}
   ; 𝕊 𝕩: 𝕩
@@ -217,7 +217,7 @@ Eval⇐{ hooks‿vmap VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
       # 𝕩 𝕨 args 
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      hooks RunBC bc‿start‿env‿args
+      hooks‿file RunBC bc‿start‿env‿args
     }
   }¨ bodyInfo
 

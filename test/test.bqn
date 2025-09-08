@@ -21,9 +21,9 @@ Test←{ f 𝕊 inb‿exp:
   ! outb≡exp
 }
 
+#"cases/break.a.bqn" Test ⟨"a","b"⟩‿⟨"10", "20"⟩                          # should print out argument variables in break point position
+"cases/break.a.bqn" Test ⟨"𝕩"⟩‿⟨"20"⟩                          # should print out argument variables in break point position
 #"cases/error.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables
 #"cases/error.c.bqn" Test ⟨"a","𝕨", "b", "𝕩"⟩‿⟨"111", "111","555","555"⟩  # should print out argument variables in function
-# TODO test imports
-"cases/break.a.bqn" Test ⟨"a","b"⟩‿⟨"10", "20"⟩                          # should print out argument variables in break point position
 
 •Out "ok ✓"
