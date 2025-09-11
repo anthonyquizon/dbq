@@ -1,2 +1,2 @@
-A⇐{𝕩+1⋄𝕩⊑↕100} #    ?? Should break at A⇐{...}, 𝕩+1 and 𝕩⊑↕100
-B⇐{𝕩+2⋄𝕩⊑↕200} # 𝕩⊑ ?? Should break at 𝕩⊑
+a←10
+1+{𝕩+a}¨↕2    # +a ?? break on first bytecode matching +a

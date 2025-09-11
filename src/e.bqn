@@ -11,7 +11,6 @@ red     ←e∾"[31m"
 magenta ←e∾"[35m"
 boldRed ←e∾"[1;31m"
 reset   ←e∾"[0m"
-
 flag_step←0
 
 prompt←"    "
@@ -20,6 +19,12 @@ asc←"`1234567890-=~!@#$%^&*()_+qwertyuiop[]QWERTYUIOP{}asdfghjkl;''ASDFGHJKL:"
 uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽𝕨∊↑∧y⊔⊏⊐π←→↙𝕎⍷𝕣⍋YU⊑⊒⍳⊣⊢⍉𝕤↕𝕗𝕘⊸∘○⟜⋄↩\↖𝕊D𝔽𝔾«J⌾»·˙|⥊𝕩↓∨⌊n≡∾≍≠⋈𝕏C⍒⌈N≢≤≥⇐‿"
 
 imports←⟨⟩ •HashMap ⟨⟩ 
+
+bkt_ops←⟨
+  16,17,20,21,26,27,   # Application
+  18,19,23,22          # Application with Nothing
+  47,48,49,50,51       # Assignment
+⟩
 
 dbg_ops←⟨
   16,17,20,21,26,27,   # Application
@@ -129,7 +134,7 @@ _PreHook←{vmap _𝕣 pos‿file:
 
     ln←(l-1)⊑sl
     h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
-    io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩
+    io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩ # TODO move this to repl?
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h,magenta,m,reset,t⟩
 
     Repl vmap
@@ -155,24 +160,30 @@ Import ← {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
 ; 𝕨 𝕊 ⟨file⇐file⟩ : imports.Has file ? (imports.Get file).Get @
 ; 𝕨 𝕊 ⟨file⇐file⟩ : 
+
     h←'#' # avoid breaking vims syntax highlighting
     s←•file.Chars file 
     cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(file⊸(•Exit _CmpCatch)) s
     bc‿·‿·‿·‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
 
+    # TODO restore instruction map - pick only instructions
+
     # construct break points
     l←+`s=lf                           # lines
     g←l⊔s                             
-    q←{1⊑2↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # c: code, q: query
+    q←{1⊑2↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # c: code, q: query 
     q↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 1↓𝕩)⍷𝕨}¨q
-    q↩(i⊏q)∧bc≠6                # separate by pop instructions (6)
+    q↩(i⊏q)∧bc≠6                # separate by pop instructions (6) and filter out only valid bytecode types
     q↩1↓(↕≠q)⊔˜q×+`»⊸<q # group break point into index groups of valid break points
+    •Show q
+    q↩(⊢/˜∊⟜bc)¨q
+    
     q↩⊑¨q/˜(0≠≠)¨q # break only on first match in line (ie. take first of break group)
 
     # Saved data for imports
     ns←{
-      line  ⇐ l                 # delete?
-      cols  ⇐ ∾(↕≠)¨⊔˜+`s=@+10  # delete?
+      line  ⇐ l                 # line numbers
+      cols  ⇐ ∾(↕≠)¨⊔˜+`s=@+10  # column numbers
       break ⇐ q                 # break point bytecode mask - accessed by pos
       cm    ⇐ cm                # compilation result
       src   ⇐ s                 # raw source code (helps for debugging)
