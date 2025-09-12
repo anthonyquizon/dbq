@@ -15,6 +15,7 @@ Test←{
     •Out "test "∾file
 
     inb↩∾(cont¨↕10)∾˜lf∾˜¨inb ⋄ outb←⟨⟩                                    # inb append with mulitple continues to eventually exit program without running ctrl+
+    # TODO expect done key sequence
     args←{
       Out  ⇐ {outb∾⟜⟨•Fmt𝕩⟩↩}
       In   ⇐ {𝕊:t←⊑1↑inb⋄inb↩1↓inb⋄t}
@@ -23,14 +24,28 @@ Test←{
     ⟨Run⟩←args •Import "../src/e.bqn"
     Run •path∾'/'∾file
 
+    # TODO diff
     ! outb≡exp
 ; ·𝕊· : @
 }
 
 ## Breakpoint tests
-"cases/break.a.bqn" Test ⟨"a","b"⟩‿⟨"10", "20"⟩                          # should print out argument variables in break point position
-"cases/break.b.bqn" Test ⟨"𝕩"⟩‿⟨"20"⟩                                    # should print out argument variables in break point position
-"cases/break.c.bqn" Test ⟨"𝕩"⟩‿⟨"20"⟩                                    # should print out argument variables in break point position
+# should print out argument variables in break point position where undefined variables print out @
+"cases/break.a.bqn" Test ⟨
+  ⟨"a", "b", cont, "a",  "b"⟩
+  ⟨"@", "@",       "1",  "@"⟩
+⟩
+
+# should print out argument variables in break point position
+"cases/break.b.bqn" Test ⟨
+  ⟨"𝕩", "a",  cont, "𝕩", "a" ⟩ # TODO explicit done sequence
+  ⟨"0", "10",     , "1", "10"⟩
+⟩ 
+"cases/break.c.bqn" Test ⟨
+  ⟨"a", "b", "c"⟩
+  ⟨"1", "@", "@"⟩
+⟩
+"cases/break.d.bqn" Test ⟨"𝕩"⟩‿⟨"20"⟩                                    # should print out argument variables in break point position
 
 ## Error tests
 "cases/error.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables

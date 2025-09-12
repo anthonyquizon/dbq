@@ -1,3 +1,4 @@
-import←•Import "break.c.import.bqn"
-import.A 10
-import.B 20
+a←1
+b←2+2 # ??
+c←3
+

@@ -18,13 +18,16 @@ prompt←"    "
 asc←"`1234567890-=~!@#$%^&*()_+qwertyuiop[]QWERTYUIOP{}asdfghjkl;''ASDFGHJKL:""|zxcvbnm,./ZXCVBNM<>? "
 uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽𝕨∊↑∧y⊔⊏⊐π←→↙𝕎⍷𝕣⍋YU⊑⊒⍳⊣⊢⍉𝕤↕𝕗𝕘⊸∘○⟜⋄↩\↖𝕊D𝔽𝔾«J⌾»·˙|⥊𝕩↓∨⌊n≡∾≍≠⋈𝕏C⍒⌈N≢≤≥⇐‿"
 
-imports←⟨⟩ •HashMap ⟨⟩ 
+imports←•HashMap˜⟨⟩ 
 
-bkt_ops←⟨
-  16,17,20,21,26,27,   # Application
-  18,19,23,22          # Application with Nothing
-  47,48,49,50,51       # Assignment
+instr ← (⊏/¨1⊸↓)'0'-˜⟨ # For each instruction, number of:
+  "11411311121111111315114131131111=111"  # Codes until next opcode
+  "111000111100000000002221100000000111"  # Arguments
+  "000111////23232303230000011022232111"  # Stack values consumed
+  "111000111111111101111111101101111111"  # Stack values output
+  "000000000011111101010000000000010000"  # Position determiner
 ⟩
+
 
 dbg_ops←⟨
   16,17,20,21,26,27,   # Application
@@ -126,7 +129,7 @@ _PreHook←{vmap _𝕣 pos‿file:
   {𝕊: 
     sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src
     o←|-´pos⊑¨loc     # offset 
-    c←cols⊑˜⊑pos⊑¨loc # column
+    c←cols⊑˜1-˜⊑pos⊑¨loc # column
     l←1+line⊑˜pos⊑⊑loc       # line
 
     # TODO highlight line
@@ -165,20 +168,29 @@ Import ← {
     s←•file.Chars file 
     cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(file⊸(•Exit _CmpCatch)) s
     bc‿·‿·‿·‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
+    ba‿·‿·‿·←instr
 
-    # TODO restore instruction map - pick only instructions
+    m ← { # Mask of instruction starts
+      n ← (↕≠bc)+1+ba(⊣⊏˜≠⊸>×⊢)bc
+      Se←≠(>/⊢)∾⟜≠{(⊏˜𝕨)𝕊⍟(≠○(¯1⊸⊑))𝕩∾𝕩⊏𝕨}⟨0⟩˙
+      (≠↑·/⁼Se) n
+    }
+
+    #m↩m∧6≠m×bc # 
 
     # construct break points
     l←+`s=lf                           # lines
     g←l⊔s                             
     q←{1⊑2↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # c: code, q: query 
     q↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 1↓𝕩)⍷𝕨}¨q
-    q↩(i⊏q)∧bc≠6                # separate by pop instructions (6) and filter out only valid bytecode types
-    q↩1↓(↕≠q)⊔˜q×+`»⊸<q # group break point into index groups of valid break points
-    •Show q
-    q↩(⊢/˜∊⟜bc)¨q
-    
-    q↩⊑¨q/˜(0≠≠)¨q # break only on first match in line (ie. take first of break group)
+
+    q↩(i⊏q)∧6≠m×bc                # separate by pop instructions (6) and filter out only valid bytecode types
+    z←s=lf
+    #•SHow [↕≠q, i,q,i⊏'_'¨⌾(z⊸/)s]
+
+    q↩1↓(↕≠q)⊔˜(0=⊒i)×q×m×+`»⊸<q # group instruction sets and dedup same instructions on same line
+
+    q↩⊑¨q/˜(0≠≠)¨q # break only on first match in group (ie. take first of break group)
 
     # Saved data for imports
     ns←{
