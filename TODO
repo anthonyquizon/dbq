@@ -1,5 +1,4 @@
 Next line hotkey in repl
-FIX: Repl on exception
 Show previous and next lines for context
 Show Highlight current line
 Autofill current line in Repl exception
@@ -9,3 +8,6 @@ Add formatter
    Two column code + comments
    Rmove ??
 Add breakpoints in repl
+Command line flag for adding breakpoints
+Add unicode explain tree
+FIX: Undefined identifier REPL error

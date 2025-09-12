@@ -196,7 +196,7 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
     Vmap←{𝕊: h←"𝕊𝕩𝕨" •HashMap 3↑args ⋄ h MakeVmap env ⋄ h } # lazy function to construct variable map from env and args
 
     vmap hooks._Pre i‿file
-    stack Op⎊{𝕊:hooks.Err file} env
+    stack Op⎊{𝕊:vmap hooks._Err i‿file} env
     vmap hooks._Post i‿file
 
     stack.cont  # Changes to 0 on return or abort

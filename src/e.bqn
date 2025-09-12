@@ -146,7 +146,7 @@ _PostHook←{· _𝕣 pos‿file:
 hooks←{
   _Pre  ⇐ _PreHook
   _Post ⇐ _PostHook
-  Err   ⇐ {VMCatch 𝕩 ⋄ Repl 𝕩 }
+  _Err  ⇐ {vmap _𝕣 ·: VMCatch@ ⋄ Repl vmap}
 }
 
 # Wrap namespace to vm compatable namespace 
