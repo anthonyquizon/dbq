@@ -8,13 +8,12 @@ term←{
   RawMode ⇐ {𝕩}
 }
 
-flgs←{
-  p⇐∾𝕩(⊣/˜·»⍷˜)⋈"-p"
-}•args
+fltr←∾≠⊸↑•args
 
 Test←{ 
-  file 𝕊 inb‿exp: ∨´flgs.p⍷file ? 
-    # TODO filter by file
+  file 𝕊 inb‿exp: ∨´fltr⍷file ? 
+    •Out "test "∾file
+
     inb↩∾(cont¨↕10)∾˜lf∾˜¨inb ⋄ outb←⟨⟩                                    # inb append with mulitple continues to eventually exit program without running ctrl+
     args←{
       Out  ⇐ {outb∾⟜⟨•Fmt𝕩⟩↩}
@@ -30,11 +29,11 @@ Test←{
 
 ## Breakpoint tests
 "cases/break.a.bqn" Test ⟨"a","b"⟩‿⟨"10", "20"⟩                          # should print out argument variables in break point position
-#"cases/break.b.bqn" Test ⟨"𝕩"⟩‿⟨"20"⟩                                    # should print out argument variables in break point position
-#"cases/break.c.bqn" Test ⟨"𝕩"⟩‿⟨"20"⟩                                    # should print out argument variables in break point position
+"cases/break.b.bqn" Test ⟨"𝕩"⟩‿⟨"20"⟩                                    # should print out argument variables in break point position
+"cases/break.c.bqn" Test ⟨"𝕩"⟩‿⟨"20"⟩                                    # should print out argument variables in break point position
 
 ## Error tests
-#"cases/error.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables
-#"cases/error.b.bqn" Test ⟨"a","𝕨", "b", "𝕩"⟩‿⟨"111", "111","555","555"⟩  # should print out argument variables in function
+"cases/error.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables
+"cases/error.b.bqn" Test ⟨"a","𝕨", "b", "𝕩"⟩‿⟨"111", "111","555","555"⟩  # should print out argument variables in function
 
-#•Out "ok ✓"
+•Out "ok ✓"
