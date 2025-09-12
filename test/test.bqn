@@ -45,7 +45,10 @@ Test←{
   ⟨"a", "b", "c"⟩
   ⟨"1", "@", "@"⟩
 ⟩
-"cases/break.d.bqn" Test ⟨"𝕩"⟩‿⟨"20"⟩                                    # should print out argument variables in break point position
+"cases/break.d.bqn" Test ⟨
+  ⟨"A", cont, "𝕩"⟩
+  ⟨"@",     , "10"⟩
+⟩ # should print out argument variables in break point position
 
 ## Error tests
 "cases/error.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables

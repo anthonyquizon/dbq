@@ -2,7 +2,6 @@ Next line hotkey in repl
 Show previous and next lines for context
 Show Highlight current line
 Autofill current line in Repl exception
-Make ?? syntax to be at end of comments
 Hotkey for invalidate import cache and rerun program with same breakpoints
 Add formatter
    Two column code + comments
@@ -11,3 +10,4 @@ Add breakpoints in repl
 Command line flag for adding breakpoints
 Add unicode explain tree
 FIX: Undefined identifier REPL error
+Add repl file for automatic input

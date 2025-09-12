@@ -170,8 +170,8 @@ Import ← {
     # construct break points
     l←+`s=lf                           # lines TODO remove newline chars?
     g←l⊔s                             
-    q←{1⊑2↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # c: code, q: query 
-    q↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 1↓𝕩)⍷𝕨}¨q
+    q←{2⊑3↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # 
+    q↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 2↓𝕩)⍷𝕨}¨q
     q↩(i⊏q)∧6≠m×bc                # separate by pop instructions (6) and filter out only valid bytecode types
     q↩1↓(↕≠q)⊔˜(0=⊒i)×q×m×+`»⊸<q # group instruction sets and dedup same instructions on same line
     q↩⊑¨q/˜(0≠≠)¨q # break only on first match in group (ie. take first of break group)
@@ -244,6 +244,7 @@ Repl⇐{𝕊 vmap:
   ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,            0,               1          ⟩ # ctrl+u
   ; 𝕩:𝕩≡≍@+3               ? ⟨⟨⟩,            0,               {𝕊:•Exit 0}⟩ # ctrl+c
   ; 𝕩:0=≠ch                ? ⟨𝕩,             1,               1          ⟩
+  # TODO add command
   ; 𝕩:'\'=ch(⊣⊑˜0⌈≠⊸⌊)ps-1 ? z←uni/˜asc∊𝕩
                              ⟨ch0←1 Patch z, (≠z)+ps-1,       1          ⟩ # replace '/' with unicode chars
   ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,            1          ⟩ 

@@ -3,8 +3,8 @@
 ## Breakpoints
 **Syntax**
 Specify breakpoints as comments in source code
-- `# ?? ` break point
-- `# <WTF>?? ` breakpoint where bytecode matches `<WTF>`
+- `<code> # <comment> ?? ` break point
+- `<code> # <comment> ?? <pattern>` breakpoint where bytecode matches `<pattern>`
 
 **Key mappings**
 - ctrl-Enter: continue to next breakpoint
