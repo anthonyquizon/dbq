@@ -132,9 +132,6 @@ _PreHook←{vmap _𝕣 pos‿file:
     c←i⊑cols
     l←i⊑line
 
-    # TODO highlight line
-    # TODO print previous and next lines
-
     ln←l⊑line⊔src
     h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln # h: head, m: middle, t: tail
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩ # TODO move this to repl?
