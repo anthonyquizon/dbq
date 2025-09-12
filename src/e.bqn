@@ -127,18 +127,18 @@ _PreHook←{vmap _𝕣 pos‿file:
   ⟨cm,src,cols,line,break⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
 
   {𝕊: 
-    sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src
+    i←pos⊑⊑loc
     o←|-´pos⊑¨loc     # offset 
-    c←cols⊑˜1-˜⊑pos⊑¨loc # column
-    l←1+line⊑˜pos⊑⊑loc       # line
+    c←i⊑cols
+    l←i⊑line
 
     # TODO highlight line
     # TODO print previous and next lines
 
-    ln←(l-1)⊑sl
-    h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln
+    ln←l⊑line⊔src
+    h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln # h: head, m: middle, t: tail
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩ # TODO move this to repl?
-    io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h,magenta,m,reset,t⟩
+    io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h(⊣/˜≠)lf,magenta,m,reset,t⟩
 
     Repl vmap
   }⍟⊣ flag_step∨∨´pos⍷break
@@ -176,29 +176,22 @@ Import ← {
       (≠↑·/⁼Se) n
     }
 
-    #m↩m∧6≠m×bc # 
-
     # construct break points
-    l←+`s=lf                           # lines
+    l←+`s=lf                           # lines TODO remove newline chars?
     g←l⊔s                             
     q←{1⊑2↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # c: code, q: query 
     q↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 1↓𝕩)⍷𝕨}¨q
-
     q↩(i⊏q)∧6≠m×bc                # separate by pop instructions (6) and filter out only valid bytecode types
-    z←s=lf
-    #•SHow [↕≠q, i,q,i⊏'_'¨⌾(z⊸/)s]
-
     q↩1↓(↕≠q)⊔˜(0=⊒i)×q×m×+`»⊸<q # group instruction sets and dedup same instructions on same line
-
     q↩⊑¨q/˜(0≠≠)¨q # break only on first match in group (ie. take first of break group)
 
     # Saved data for imports
     ns←{
-      line  ⇐ l                 # line numbers
-      cols  ⇐ ∾(↕≠)¨⊔˜+`s=@+10  # column numbers
-      break ⇐ q                 # break point bytecode mask - accessed by pos
-      cm    ⇐ cm                # compilation result
-      src   ⇐ s                 # raw source code (helps for debugging)
+      line  ⇐ l         # line numbers
+      cols  ⇐ ∾(↕≠)¨⊔˜l # column numbers
+      break ⇐ q         # break point bytecode mask - accessed by pos
+      cm    ⇐ cm        # compilation result
+      src   ⇐ s         # raw source code (helps for debugging)
 
       Get    ⇐ !∘"Import result referenced before completion"
       SetRet ⇐ {𝕊 v: Get↩{𝕊:v}}

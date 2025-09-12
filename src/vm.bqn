@@ -189,7 +189,7 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   {𝕊:
-    i←pos
+    i  ← pos
     op ← (Next@) ⊑ ops
     op ↩ Op next
 
