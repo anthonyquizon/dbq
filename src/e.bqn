@@ -127,16 +127,10 @@ _PreHook←{vmap _𝕣 pos‿file:
   ⟨cm,src,cols,line,break⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
 
   {𝕊: 
-    i←pos⊑⊑loc
-    o←|-´pos⊑¨loc     # offset 
-    c←i⊑cols
-    l←i⊑line
-
-    ln←l⊑line⊔src
+    i←pos⊑⊑loc ⋄ o←|-´pos⊑¨loc ⋄ c←i⊑cols ⋄ l←i⊑line ⋄ ln←l⊑line⊔src # i: position from bc to src. o: offset between start and end postions. c: current column number. l: current line number. ln: current line as string
     h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln # h: head, m: middle, t: tail
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩ # TODO move this to repl?
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h(⊣/˜≠)lf,magenta,m,reset,t⟩
-
     Repl vmap
   }⍟⊣ flag_step∨∨´pos⍷break
 
