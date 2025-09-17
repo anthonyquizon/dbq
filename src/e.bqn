@@ -3,6 +3,8 @@ gl      ←    •Import "glyphs.bqn"
 compile ← gl •Import "c.bqn"
 vm      ←    •Import "vm.bqn"
 
+# TODO if args is namespace
+# else use default namespace
 io←•args
 
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
@@ -11,7 +13,7 @@ red     ←e∾"[31m"
 magenta ←e∾"[35m"
 boldRed ←e∾"[1;31m"
 reset   ←e∾"[0m"
-flag_step←0
+bkt_next←0
 
 prompt←"    "
 
@@ -27,7 +29,6 @@ instr ← (⊏/¨1⊸↓)'0'-˜⟨ # For each instruction, number of:
   "111000111111111101111111101101111111"  # Stack values output
   "000000000011111101010000000000010000"  # Position determiner
 ⟩
-
 
 dbg_ops←⟨
   16,17,20,21,26,27,   # Application
@@ -46,7 +47,7 @@ ctx‿dbg ← {𝕊:{
 sysfile←{
   Lines⇐{ 
     𝕩 : "/"≤○≠◶0‿(⊣≡≠⊸↑)𝕩 ? •file.Lines 𝕩 
-  ; 𝕩 : •file.Lines ∾⟜𝕩 •file.Parent ctx.Peek @ ⋄ 
+  ; 𝕩 : •file.Lines ∾⟜𝕩 •file.Parent ctx.Peek @
   } 
   List ⇐{ •file.List ∾⟜𝕩 •file.Parent ctx.Peek @ } 
 }
@@ -62,6 +63,7 @@ syslist←⟨
     "flines"‿sysfile.Lines
     "math"‿•math
     "term"‿•term
+    "break"‿{bkt_next↩1⋄𝕩}
     "wdpath"‿•wdpath
     "currenterror"‿•CurrentError
     "hashmap"‿•HashMap
@@ -132,7 +134,7 @@ _PreHook←{vmap _𝕣 pos‿file:
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩ # TODO move this to repl?
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h(⊣/˜≠)lf,magenta,m,reset,t⟩
     Repl vmap
-  }⍟⊣ flag_step∨∨´pos⍷break
+  }⍟⊣ bkt_next∨∨´pos⍷break
 
   {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
@@ -167,7 +169,6 @@ Import ← {
       (≠↑·/⁼Se) n
     }
 
-    # construct break points
     l←+`s=lf                           # lines TODO remove newline chars?
     g←l⊔s                             
     q←{2⊑3↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # 
@@ -212,7 +213,7 @@ Repl⇐{𝕊 vmap:
 
   vmap↩Vmap @ ⋄ ch←⟨⟩ ⋄ ps←0 # vmap: variable mappings. ch: character buffer. ps: cursor offset
   hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄Err⇐VMCatch}
-  flag_step↩0
+  bkt_next↩0
 
   Cmd←{
     ch 𝕊·: ""≡Trim ch? # ignore empty statements
@@ -227,8 +228,8 @@ Repl⇐{𝕊 vmap:
       1
   }
 
-  Continue←{𝕊:io.term.OutRaw lf∾˜"Continue"⋄flag_step↩0⋄0}
-  Next    ←{𝕊:flag_step↩1⋄0} 
+  Continue←{𝕊:io.term.OutRaw lf∾˜"Continue"⋄bkt_next↩0⋄0}
+  Next    ←{𝕊:bkt_next↩1⋄0} 
 
   Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch} # add 𝕩 into ch at ps position with 𝕨 deletions
 
