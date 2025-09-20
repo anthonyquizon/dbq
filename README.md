@@ -1,7 +1,13 @@
 # qBQN
 
 ## Breakpoints
-**Syntax**
+
+**System function**
+```bqn
+•Break@ # break at this line
+`` 
+
+**Comment Syntax**
 Specify breakpoints as comments in source code
 - `<code> # <comment> ?? ` break point
 - `<code> # <comment> ?? <pattern>` breakpoint where bytecode matches `<pattern>`
