@@ -13,5 +13,4 @@ FIX: Undefined identifier REPL error
 Add repl file for automatic input
 Lisp style editing? Edit in place?
 Open socket for editors to send redefines?
-Add •break system function for repl
-Vim on save run qbqn? - write to file with output as comments?
+Add •break system function for repl ✓

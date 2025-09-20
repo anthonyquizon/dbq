@@ -52,6 +52,13 @@ sysfile←{
   List ⇐{ •file.List ∾⟜𝕩 •file.Parent ctx.Peek @ } 
 }
 
+Show←{
+  # TODO current line
+  •Show 𝕩
+}
+
+Break←{bkt_next↩1⋄𝕩}
+
 syslist←⟨
     "while"‿•_while_
     "hash"‿•Hash
@@ -63,13 +70,13 @@ syslist←⟨
     "flines"‿sysfile.Lines
     "math"‿•math
     "term"‿•term
-    "break"‿{bkt_next↩1⋄𝕩}
+    "break"‿Break
     "wdpath"‿•wdpath
     "currenterror"‿•CurrentError
     "hashmap"‿•HashMap
     "toutf8"‿•ToUTF8
-    "ns"  ‿•ns
-    "show"‿•Show
+    "ns"‿•ns
+    "show"‿Show
     "bqn"‿•Bqn
     "fmt"‿•Fmt
     "makerand"‿•MakeRand
