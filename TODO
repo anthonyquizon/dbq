@@ -2,7 +2,6 @@ Next line hotkey in repl
 Show previous and next lines for context
 Show Highlight current line
 REPL history
-Autofill current line in Repl exception
 Hotkey for invalidate import cache and rerun program with same breakpoints
 Add formatter for two column code + comments
 Add formatter for ?? removal
@@ -11,6 +10,6 @@ Command line flag for adding breakpoints
 Add unicode explain tree
 FIX: Undefined identifier REPL error
 Add repl file for automatic input
-Lisp style editing? Edit in place?
-Open socket for editors to send redefines?
+Use as library?
+Implement debugger using debugger ☺
 Add •break system function for repl ✓

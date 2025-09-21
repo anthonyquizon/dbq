@@ -1,8 +1,10 @@
+#!/usr/bin/env bqn
+
 ⟨Run,Repl⟩←{
   Out  ⇐ •Show
   In   ⇐ •term.CharB
   term ⇐ •term
-} •Import "./e.bqn"
+} •Import "./bqn-vm/e.bqn"
 
 usage←∾∾⟜(@+10)¨⟨
   "Usage: vbqn [options] [file.bqn [arguments]]"
