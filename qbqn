@@ -1,4 +1,18 @@
-#!/usr/bin/env bash
-# Allows symlink or nonsymlink versions of script. eg. if calling from symlink file in ~/.bin
-src="$(dirname "$(readlink -f "$0")")"
-bqn "$src/qbqn.bqn" "$@"
+#!/usr/bin/env bqn
+
+⟨Run,Repl⟩←{
+  Out  ⇐ •Show
+  In   ⇐ •term.CharB
+  term ⇐ •term
+} •Import "./bqn-vm/e.bqn"
+
+usage←∾∾⟜(@+10)¨⟨
+  "Usage: qbqn [options] [file.bqn [arguments]]"
+⟩
+
+flgs←{
+  r⇐∾𝕩(⊣/˜·»⍷˜)⋈"-r"
+}•args 
+
+{𝕊:•Out usage⋄•Exit 0}⍟(0⊸=)≠•args 
+Run •wdpath∾'/'∾⊑•args
