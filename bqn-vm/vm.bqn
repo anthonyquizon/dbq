@@ -1,3 +1,7 @@
+
+# decorate function
+
+
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -147,10 +151,10 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   13‿{i←𝕏@ ⋄ {s𝕊e: s.Push > ⌽s.Pop i } }
   14‿{i←𝕏@ ⋄ {s𝕊e: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
   # Application
-  16‿(       {s𝕊e: s.Push {   f‿x: F x }   s.Pop 2 }˙) 
-  17‿(       {s𝕊e: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙) 
-  20‿(       {s𝕊e: s.Push {   g‿h:   G H }   s.Pop 2 }˙)
-  21‿(       {s𝕊e: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
+  16‿(       {s𝕊e: s.Push {   f‿x: F x     } s.Pop 2 }˙) 
+  17‿(       {s𝕊e: s.Push { w‿f‿x: w F x   } s.Pop 3 }˙) 
+  20‿(       {s𝕊e: s.Push {   g‿h:   G H   } s.Pop 2 }˙)
+  21‿(       {s𝕊e: s.Push { f‿g‿h: F G H   } s.Pop 3 }˙)
   26‿(       {s𝕊e: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
   27‿(       {s𝕊e: s.Push { f‿m‿g: F _m_ g } s.Pop 3 }˙)
   # Application with Nothing

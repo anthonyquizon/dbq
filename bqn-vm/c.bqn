@@ -1,4 +1,9 @@
-func‿mod1‿mod2 ← •args
+# BQN primitive glyphs: functions, 1-modifiers, 2-modifiers
+func‿mod1‿mod2 ← ⟨
+  "+-×÷⋆√⌊⌈|¬∧∨<>≠=≤≥≡≢⊣⊢⥊∾≍⋈↑↓↕«»⌽⍉/⍋⍒⊏⊑⊐⊒∊⍷⊔!"
+  "˙˜˘¨⌜⁼´˝`"
+  "∘○⊸⟜⌾⊘◶⎉⚇⍟⎊"
+⟩
 na←¯1⊑≢alph←("aA"+⌜↕26)∾˘"àÀ"+⌜(↕23)∾24+↕7
 lf←@+10‿13
 charSet‿cgl←(∾ ⋈ ≠¨)⟨

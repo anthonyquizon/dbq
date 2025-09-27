@@ -1,7 +1,6 @@
 # Reference: https://github.com/anthonyquizon/vbqn/blob/main/src/v.bqn
-gl      ←    •Import "glyphs.bqn"
-compile ← gl •Import "c.bqn"
-vm      ←    •Import "vm.bqn"
+compile ← •Import "c.bqn"
+vm      ← •Import "vm.bqn"
 
 # TODO if args is namespace
 # else use default namespace
@@ -175,6 +174,7 @@ Import ← {
       Se←≠(>/⊢)∾⟜≠{(⊏˜𝕨)𝕊⍟(≠○(¯1⊸⊑))𝕩∾𝕩⊏𝕨}⟨0⟩˙
       (≠↑·/⁼Se) n
     }
+
 
     l←+`s=lf                           # lines TODO remove newline chars?
     g←l⊔s                             
