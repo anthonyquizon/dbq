@@ -131,8 +131,8 @@ VMCatch⇐{𝕊 ·:
   PrintStackTrace @
 }
 
-_PreHook←{vmap _𝕣 pos‿file: 
-  ⟨cm,src,cols,line,break⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
+_PreHook←{vmap _𝕣 pos‿file‿stack: 
+  ⟨cm,src,cols,line,break,print⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
 
   {𝕊: 
     i←pos⊑⊑loc ⋄ o←|-´pos⊑¨loc ⋄ c←i⊑cols ⋄ l←i⊑line ⋄ ln←l⊑line⊔src # i: position from bc to src. o: offset between start and end postions. c: current column number. l: current line number. ln: current line as string
@@ -142,10 +142,17 @@ _PreHook←{vmap _𝕣 pos‿file:
     Repl vmap
   }⍟⊣ bkt_next∨∨´pos⍷break
 
+  # TODO flag for printing file and line number
+  {𝕊: 
+    i←pos⊑⊑loc ⋄ l←i⊑line ⋄ ln←l⊑line⊔src # i: position from bc to src. l: current line number. ln: current line as string
+    io.term.OutRaw •ToUTF8 lf∾˜    ∾⟨boldCyan,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset,' ',1↓ln⟩ # TODO move this to repl?
+    io.Out stack.Peek 1
+  }⍟⊣ pos⍷print
+
   {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
 
-_PostHook←{· _𝕣 pos‿file: 
+_PostHook←{· _𝕣 pos‿file‿stack: 
   ⟨cm⟩←imports.Get file ⋄ bc‿·‿·‿·‿·‿·←cm
   {𝕊: dbg.Pop 1}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
@@ -166,7 +173,7 @@ Import ← {
     h←'#' # avoid breaking vims syntax highlighting
     s←•file.Chars file 
     cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(file⊸(•Exit _CmpCatch)) s
-    bc‿·‿·‿·‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
+    bc‿·‿blockInfo‿bodyInfo‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
     ba‿·‿·‿·←instr
 
     m ← { # Mask of instruction starts
@@ -175,21 +182,32 @@ Import ← {
       (≠↑·/⁼Se) n
     }
 
+    l←+`s=lf ⋄ g←l⊔s                      # line number  and grouped lines
+    pg ←+`(≠i)↑/⁼⊑¨bodyInfo
+    prt←{∨´(=⟜h∨(≠∘⊢↑"---"⊸⍷))𝕩}¨g 
+    prt↩∾(1¨¨g)×prt
+    prt↩ (≠i)↑/⁼(∧i)⍋/<⟜»prt # map nearest to bytecode locations and nearest bytecode
+    •Show prt
+    prt↩prt∧bc=6
+    #•Show  prt
+    #•SHow ⌈`¨pg⊔prt
+    prt↩/∾⌈`¨pg⊔prt
+    #•SHow bc=6
+    #•Show  prt
 
-    l←+`s=lf                           # lines TODO remove newline chars?
-    g←l⊔s                             
-    q←{2⊑3↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g # 
-    q↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 2↓𝕩)⍷𝕨}¨q
-    q↩(i⊏q)∧6≠m×bc                # separate by pop instructions (6) and filter out only valid bytecode types
-    q↩1↓(↕≠q)⊔˜(0=⊒i)×q×m×+`»⊸<q # group instruction sets and dedup same instructions on same line
-    q↩⊑¨q/˜(0≠≠)¨q # break only on first match in group (ie. take first of break group)
-
+    brk←{2⊑3↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g  
+    brk↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 2↓𝕩)⍷𝕨}¨brk
+    brk↩(i⊏brk)∧6≠m×bc                    # separate by pop instructions (6) and filter out only valid bytecode types
+    brk↩1↓(↕≠brk)⊔˜(0=⊒i)×brk×m×+`»⊸<brk  # group instruction sets and dedup same instructions on same line
+    brk↩⊑¨brk/˜(0≠≠)¨brk                  # break only on first match in group (ie. take first of break group)
 
     # Saved data for imports
     ns←{
       line  ⇐ l         # line numbers
       cols  ⇐ ∾(↕≠)¨⊔˜l # column numbers
-      break ⇐ q         # break point bytecode mask - accessed by pos
+      break ⇐ brk       # break point bytecode - accessed by pos
+      #print ⇐ prt       # print point bytecode - accessed by pos
+      print ⇐ ⟨⟩       # print point bytecode - accessed by pos
       cm    ⇐ cm        # compilation result
       src   ⇐ s         # raw source code (helps for debugging)
 

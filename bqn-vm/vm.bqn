@@ -128,7 +128,7 @@ MakeStack ← {
   rslt ⇐ skipMark                # Result: skipMark to abort current body
   Push ⇐ {s∾↩<𝕩}                 # Push a value
   Pop  ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
-  Peek ⇐ {𝕊:¯1⊑s}                # Return but don't pop top value
+  Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}               # Return but don't pop top value
   Ret  ⇐ {rslt↩𝕩 ⋄ cont↩0 ⋄ "Internal compiler error: Wrong stack size"!𝕨≥≠s}
   Skip ⇐ {𝕊:       cont↩0}       # Exit with no return value
 }
@@ -199,9 +199,9 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
 
     Vmap←{𝕊: h←"𝕊𝕩𝕨" •HashMap 3↑args ⋄ h MakeVmap env ⋄ h } # lazy function to construct variable map from env and args
 
-    vmap hooks._Pre i‿file
+    vmap hooks._Pre i‿file‿stack
     stack Op⎊{𝕊:vmap hooks._Err i‿file} env
-    vmap hooks._Post i‿file
+    vmap hooks._Post i‿file‿stack
 
     stack.cont  # Changes to 0 on return or abort
   } •_while_ ⊢ 1

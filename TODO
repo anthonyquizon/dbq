@@ -13,3 +13,4 @@ Add repl file for automatic input
 Use as library?
 Implement debugger using debugger ☺
 Add •break system function for repl ✓
+add #--- for print sections 

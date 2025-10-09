@@ -8,6 +8,8 @@ term←{
   RawMode ⇐ {𝕩}
 }
 
+# TODO flag for print all errors
+
 fltr←∾≠⊸↑•args
 
 Test←{ 
@@ -21,7 +23,7 @@ Test←{
       In   ⇐ {𝕊:t←⊑1↑inb⋄inb↩1↓inb⋄t}
       term ⇐ term
     }
-    ⟨Run⟩←args •Import "../bqn-vm/e.bqn"
+    ⟨Run⟩←args •Import "../bqn-vm/q.bqn"
     Run •path∾'/'∾file
 
     # TODO diff
@@ -53,5 +55,8 @@ Test←{
 ## Error tests
 "cases/error.a.bqn" Test ⟨"a"⟩‿⟨"⟨ 0 1 2 ⟩"⟩                             # should print out assigned variables
 "cases/error.b.bqn" Test ⟨"a","𝕨", "b", "𝕩"⟩‿⟨"111", "111","555","555"⟩  # should print out argument variables in function
+
+# Print tests
+"cases/print.a.bqn" Test ⟨⟩‿⟨"111", "111","555","555"⟩  
 
 •Out "ok ✓"
