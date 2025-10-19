@@ -1,4 +1,4 @@
-# qBQN
+# dbq - Debugger for BQN
 
 ## Breakpoints
 
