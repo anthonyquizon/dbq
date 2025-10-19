@@ -7,7 +7,7 @@
   Out  ⇐ •Show
   In   ⇐ •term.CharB
   term ⇐ •term
-} •Import "./bqn-vm/q.bqn"
+} •Import "./bqn-vm/d.bqn"
 
 usage←∾∾⟜(@+10)¨⟨
   "Usage: qbqn [options] [file.bqn [arguments]]"
