@@ -224,7 +224,7 @@ Import ← {
 
 Run ⇐ {
   Import 𝕩
-  io.term.OutRaw •ToUTF8 lf∾˜"Done"
+  io.term.OutRaw •ToUTF8 lf∾˜"□"
 }
 
 # f: lazy function to construct hashmap of variables
@@ -260,7 +260,7 @@ Repl⇐{𝕊 vmap:
   }
   Continue←{
     𝕊:io.term.OutRaw lf∾˜"Continue"⋄bkt_next↩0
-    ⟨⟩‿0‿1
+    ⟨⟩‿0‿0
   }
 
   Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch} # add 𝕩 into ch at ps position with 𝕨 deletions
