@@ -250,7 +250,7 @@ Repl⇐{𝕊 vmap:
       cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
       {@:1; io.Out hooks‿vmap‿@ vm.Eval 𝕩} cm
       hn↩≠history ∾⟜(⋈ch) ↩
-      ⟨⟩‿0‿0
+      ⟨⟩‿0‿1
   }
 
   SetHistory←{

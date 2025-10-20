@@ -181,9 +181,11 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
-MakeVmap←{ # convert env to hashmap
+# convert env to hashmap - variable names to functions that return variables
+MakeVmap←{ 
   h 𝕊 ⟨vars⇐vars⋄parent⇐parent⟩:
-    ({𝕩.n}¨vars) {𝕨 {𝕨 h.Set 𝕩}⍟(¬∘h.Has⊢) 𝕩}¨{𝕩.v}¨vars
+    v←vars/˜{1∘𝕩.Get⎊0 @}¨vars
+    ({𝕩.n}¨v) {𝕨 {𝕨 h.Set 𝕩.Get@}⍟(¬∘h.Has⊢) 𝕩}¨v
     h 𝕊 parent
 ; h 𝕊 ·: h
 }
