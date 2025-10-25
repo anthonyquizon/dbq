@@ -1,6 +1,6 @@
-lf←@+10 # line feed
-e←@+27 
-cont←e∾"[27;5;13~"  # ctrl+enter
+lf←@+10                                 # line feed
+e←@+27
+cont←e∾"[27;5;13~"                      # ctrl+enter
 
 term←{
   OutRaw  ⇐ {𝕩}
@@ -10,11 +10,11 @@ term←{
 
 fltr←∾≠⊸↑•args
 
-Test←{ 
-  file 𝕊 inb‿exp: ∨´fltr⍷file ? 
+Test←{
+  file 𝕊 inb‿exp: ∨´fltr⍷file ?
     •Out "test "∾file
 
-    inb↩∾(cont¨↕10)∾˜lf∾˜¨inb ⋄ outb←⟨⟩                                    # inb append with mulitple continues to eventually exit program without running ctrl+
+    inb↩∾(cont¨↕10)∾˜lf∾˜¨inb ⋄ outb←⟨⟩ # inb append with mulitple continues to eventually exit program without running ctrl+
     args←{
       Out  ⇐ {outb∾⟜⟨•Fmt𝕩⟩↩}
       In   ⇐ {𝕊:t←⊑1↑inb⋄inb↩1↓inb⋄t}
@@ -35,9 +35,9 @@ Test←{
 ⟩
 
 "cases/break.b.bqn" Test ⟨
-  ⟨"𝕩", "a", cont, "𝕩", "a"⟩ 
+  ⟨"𝕩", "a", cont, "𝕩", "a"⟩
   ⟨"1", "2",     , "2", "3"      ⟩
-⟩ 
+⟩
 
 ## Error tests
 "cases/error.a.bqn" Test ⟨
@@ -50,3 +50,4 @@ Test←{
 ⟩
 
 •Out "ok ✓"
+

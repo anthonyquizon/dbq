@@ -1,6 +1,12 @@
 # Reference: https://github.com/anthonyquizon/vbqn/blob/main/src/v.bqn
-compile ← •Import "c.bqn"
-vm      ← •Import "vm.bqn"
+glyphs ← ⟨
+  "+-×÷⋆√⌊⌈|¬∧∨<>≠=≤≥≡≢⊣⊢⥊∾≍⋈↑↓↕«»⌽⍉/⍋⍒⊏⊑⊐⊒∊⍷⊔!"
+  "˙˜˘¨⌜⁼´˝`"
+  "∘○⊸⟜⌾⊘◶⎉⚇⍟⎊"
+⟩
+
+compile ← glyphs •Import "c.bqn" 
+vm      ←        •Import "vm.bqn"
 
 # TODO if args is namespace
 # else use default namespace
@@ -59,6 +65,7 @@ syslist←⟨
     "term"‿•term
     "break"‿Break
     "brk"‿Break
+    "path"‿•path
     "wdpath"‿•wdpath
     "currenterror"‿•CurrentError
     "hashmap"‿•HashMap

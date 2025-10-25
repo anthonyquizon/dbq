@@ -1,9 +1,4 @@
-# BQN primitive glyphs: functions, 1-modifiers, 2-modifiers
-func‿mod1‿mod2 ← ⟨
-  "+-×÷⋆√⌊⌈|¬∧∨<>≠=≤≥≡≢⊣⊢⥊∾≍⋈↑↓↕«»⌽⍉/⍋⍒⊏⊑⊐⊒∊⍷⊔!"
-  "˙˜˘¨⌜⁼´˝`"
-  "∘○⊸⟜⌾⊘◶⎉⚇⍟⎊"
-⟩
+func‿mod1‿mod2 ← •args
 na←¯1⊑≢alph←("aA"+⌜↕26)∾˘"àÀ"+⌜(↕23)∾24+↕7
 lf←@+10‿13
 charSet‿cgl←(∾ ⋈ ≠¨)⟨
@@ -164,7 +159,7 @@ Parse ← {r‿nv‿i‿e‿def←𝕨
   "Invalid assignment or stranding use"_err_(↕≠) ((¯4⊸<∧≤⟜¯2)r)>(ec∨𝕩=2+⊑bG)∧»dc<0≤r
   "Can't use export statement as expression"_err_(G) (0<bt)<g⊏¯4=r
   "Can't use export statement as predicate"_err_(↕≠) (»¯4=r)∧𝕩=pred
-  "Dot must be followed by a name"_err_(↕≠) dc>«𝕩 M vi‿nv
+  "Dot must be followed by a name (or digit to form a number)"_err_(↕≠) dc>«𝕩 M vi‿nv
   sr←»⌾(((⍋⊏⟜dl)⊸⊏g)⊸⊏)sl←«⊸∨r=¯2⋄ns←¬sl∨sr # Strand right and left; not stranded
   cp←𝕩=1+⊑bB                                # Closed paren
   nr←(IT¬cp)⊏(𝕩=2+⊑bI)+2×𝕩=⊑bO              # Nothingness role: 1 for 𝕨, 2 for ·
@@ -188,18 +183,18 @@ Parse ← {r‿nv‿i‿e‿def←𝕨
   # Headers
   hh←𝕩=⊑bH⋄cs←𝕩=1+⊑bH                       # Case header : and separator ;
   fi←+`cb←b∨cs⋄H←cb¬∘PN⊢                    # Body index fi; which bodies Have a property
-  cq←(H𝕩=pred)∨ch←H hh                      # ch: body has : header ; cq: or ? predicate
+  ca←(cq←H𝕩=pred)∨ch←H hh                   # ch: body has : header ; ca: or ? predicate
   cf←1∾¬co←cb/cs⋄cm←0∾∨⟜«co                 # cf: body is first; cm: body is one of multiple
-  "Header-less bodies must come last"_err_(/CB) 1(-⊸↓<co∧↓)cq
-  "At most two header-less bodies allowed"_err_(/CB) »⊸∧co>¯1↓cq
+  "Header-less bodies must come last"_err_(/CB) 1(-⊸↓<co∧↓)ca
+  "At most two header-less bodies allowed"_err_(/CB) »⊸∧co>¯1↓ca
   cc←(⍋⍋«co)⊏c∾/cs                          # Case close
-  hi←/hf←hh⊏˜⟜IT⌾((⌽g)⊸⊏)cb∨hh              # Header component indices
-  un←0=us←swap_undo(≠∘⊣-⊐)hi⊏𝕩
-  "Invalid Undo header syntax"_err_(HI) un<(»⊸≥∨(1»un)∧2⊸=)us
-  ut←un/»us⋄hi/˜↩0=us                       # Undo type: 0 normal, 1 ⁼, 2 ˜⁼
+  hiu←/hf←hh⊏˜⟜IT⌾((⌽g)⊸⊏)cb∨hh             # Header component indices
+  un←0=us←swap_undo(≠∘⊣-⊐)hiu⊏𝕩
+  ut←un/»us⋄hi←un/hiu                       # Undo type: 0 normal, 1 ⁼, 2 ˜⁼
   hr←(⊏⟜ns×⊏⟜r)rev⊏˜hi                      # Header component roles
   hl←2=hn←(1⊸»+«)hc←¯1=hr                   # hl: is label, hc: is :
   "Only one header per body allowed"_err_(hc/HI) (g⊏˜1+gi⊏˜hc/hi)⊏hf
+  "Invalid Undo header syntax"_err_(HIU) un<(»⊸≥∨(1»un)∧2⊸=)us
   ho←(»∨·«(hr=3)∧⊢)hl<hy←2≤hr               # Header operands
   "Missing operand in header"_err_(HI) (ut∧hr=3)∨ho∧hc∨hy
   hm←¬ho∨ha←ho<(0=hr)∧1=hn                  # Mask for main name; header arguments
@@ -218,7 +213,7 @@ Parse ← {r‿nv‿i‿e‿def←𝕨
   "Header with ⁼ must take arguments"_err_(hm/HI) hx<0<ut
   cwh←hc/»hl⌈ha×1+he←0≠hk                   # Body 𝕨 for just headers
   "Header with ˜⁼ must have left argument"_err_(hm/HI) (0=cwh)∧ut2←2=ut
-  cw←(cwh⌈2×ut2)⌾(ch⊸/)1+-⟜«(»cq)<1(⊢<«)cf  # Body 𝕨: 0 no, 1 allowed, 2 required
+  cw←(cwh⌈2×ut2)⌾(ch⊸/)1+-⟜«(»ca)<1(⊢<«)cf  # Body 𝕨: 0 no, 1 allowed, 2 required
   hl/˜↩hm⋄hu←(¬he)⌾(hi⊸⊏)hf                 # hu: mask of header special names
   hj←gi⊏˜he/hi⋄hd←2=he/hk                   # hj: header assignments; hd: which ones destructure
 
@@ -230,7 +225,7 @@ Parse ← {r‿nv‿i‿e‿def←𝕨
   "Block header type conflict"_err_(ch/0∾/∘CB) (hr<ch/fr)∨hl<hx<ch/fx
   ft⌈↩1-˜fr↩hr⌾(ch⊸/)fr⋄fx↩hx⊸⌈⌾(ch⊸/)fx
   "Special name outside of any block"_err_(/{(0=fi)∧𝕩 M bI}∘𝕩) 0<⊑fr
-  "Unreachable body"_err_(/CB) 1↓(»⊸∨(¬hl)⌾(ch⊸/)cq)<cm>fx
+  "Unreachable body"_err_(/CB) 1↓(»⊸∨hl⊸≤⌾(ch⊸/)cq)<cm>fx
   fsc←(ft⊏0‿2‿3)+3×fx                       # Special name count
   hv-↩(»+`hc)⊏3×¬ch/fx                      # Header variable slot
 
@@ -261,7 +256,7 @@ Parse ← {r‿nv‿i‿e‿def←𝕨
   no←0⌈-ir⋄ne←0⌈-er⋄nei↩g⋄nx⊏˜↩gr           # Nothing value; expression
   "Nothing (·) cannot be assigned"_nerr ne×a
   "Can't use Nothing (·) as predicate"_nerr ne×𝕩=pred
-  "Modifier expression can only have one component"_err_(G) »⊸∧(er<2)<r≥0
+  "Invalid 2-modifier use or modifier assignment"_err_(G) »⊸∧(er<2)<r≥0
   oa←⌽/oe←hg<op←(»am<a)<(er<2)∧r≥2          # op: active modifiers; oa: applied
   ro←op∨«op∧m2←r=3                          # ro: mod or right operand; m2: 2-modifier
   "Missing operand"_nerr oe×2(«⌈m2×»)no⌈2×m2≥ro∨r∊↕2
@@ -289,7 +284,7 @@ Parse ← {r‿nv‿i‿e‿def←𝕨
   nf←H ac<xv=vi-˜⊑bG                        # Namespace bodies
   fw←H gi⊏nx                                # Bodies where 𝕨 must be defined
   {"Can't return Nothing (·)"_err_(𝕩⊏⍋∘Rev) 2=fw⌈↩nf¬⊸×𝕩⊏nr} 1-˜0∾cc⊏rev
-  fv←fw⋄fw≥○I1T↩cf                          # If a body fails on 𝕨, later ones won't see 𝕨
+  fv←fw⋄fw∨↩cf≤○I1T(cw=1)∧fw                # If a body fails without 𝕨, later ones won't be called without 𝕨
   (∨´(1↓fv)⊸<)◶"Invalid use of 𝕨 in monadic case"‿"Unreachable body"_err_(/CB) 1↓fw∧cw=0
   cw⌈↩2×fw⋄cw×↩fx
   nn←g⊏fi⊏2=cw⋄no(⊣-=)↩nn⋄ne(⊣-=)↩nn        # 2=cw indicates 𝕨 is never Nothing
@@ -325,7 +320,8 @@ Parse ← {r‿nv‿i‿e‿def←𝕨
   idd←(⊢-(uv⊏ded←-0⌈def)∾(du↓IT d)⊸⊏)id⊏fd  # Identifier frame depth
   "Can't export from surrounding scope"_err_(ID) ix∧0<idd
   dx←dg⊔zda∾(dig←⍋d/ig)⊏ixa←d(/≥1↓PN)ix     # Exported identifier mask
-  idi←(uv⊸⊏∾(¯1+`du↓d)⊏dig⍋⊸⊏da≠⊸↓⊢)(⊏⟜fsc+⊒)ded∾df # Slot within frame
+  idi←((0¨ded)∾df⊏fsc)+⊒ded∾df              # Slot within frame
+  idi↩(uv⊸⊏∾(¯1+`du↓d)⊏dig⍋⊸⊏da≠⊸↓⊢)idi
   uu←(ia<1«d)∧d(⊣+`⊸⊏(1∾ixa)<PN)0<idd       # Unused marker
   spi←((spf←sp⊏fi)⊏3×fx)+3+sp⊏xv            # Special name index
   uu∾↩∊⌾⌽spi+6×spf                          # and unused marker
