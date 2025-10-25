@@ -17,14 +17,6 @@ uni←"˜˘¨⁼⌜´˝7∞¯•÷×¬⎉⚇⍟◶⊘⎊⍎⍕⟨⟩√⋆⌽�
 
 imports←•HashMap˜⟨⟩ 
 
-instr ← (⊏/¨1⊸↓)'0'-˜⟨ # For each instruction, number of:
-  "11411311121111111315114131131111=111"  # Codes until next opcode
-  "111000111100000000002221100000000111"  # Arguments
-  "000111////23232303230000011022232111"  # Stack values consumed
-  "111000111111111101111111101101111111"  # Stack values output
-  "000000000011111101010000000000010000"  # Position determiner
-⟩
-
 dbg_ops←⟨
   16,17,20,21,26,27,   # Application
   18,19,23,22          # Application with Nothing
@@ -48,7 +40,7 @@ sysfile←{
 }
 
 Show←{
-  # TODO current line
+  # TODO current line in file
   •Show 𝕩
 }
 
@@ -66,6 +58,7 @@ syslist←⟨
     "math"‿•math
     "term"‿•term
     "break"‿Break
+    "brk"‿Break
     "wdpath"‿•wdpath
     "currenterror"‿•CurrentError
     "hashmap"‿•HashMap
@@ -128,7 +121,7 @@ VMCatch⇐{𝕊 ·:
 }
 
 _PreHook←{vmap _𝕣 pos‿file‿stack: 
-  ⟨cm,src,cols,line,break,print⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
+  ⟨cm,src,cols,line⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
 
   {𝕊: 
     i←pos⊑⊑loc ⋄ o←|-´pos⊑¨loc ⋄ c←i⊑cols ⋄ l←i⊑line ⋄ ln←l⊑line⊔src # i: position from bc to src. o: offset between start and end postions. c: current column number. l: current line number. ln: current line as string
@@ -136,14 +129,7 @@ _PreHook←{vmap _𝕣 pos‿file‿stack:
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩ # TODO move this to repl?
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h(⊣/˜≠)lf,magenta,m,reset,t⟩
     Repl vmap
-  }⍟⊣ bkt_next∨∨´pos⍷break
-
-  # TODO flag for printing file and line number
-  {𝕊: 
-    i←pos⊑⊑loc ⋄ l←i⊑line ⋄ ln←l⊑line⊔src # i: position from bc to src. l: current line number. ln: current line as string
-    io.term.OutRaw •ToUTF8 lf∾˜    ∾⟨boldCyan,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset,' ',1↓ln⟩ # TODO move this to repl?
-    io.Out stack.Peek 1
-  }⍟⊣ pos⍷print
+  }⍟⊣ bkt_next
 
   {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
@@ -165,47 +151,15 @@ Import ← {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
 ; 𝕨 𝕊 ⟨file⇐file⟩ : imports.Has file ? (imports.Get file).Get @
 ; 𝕨 𝕊 ⟨file⇐file⟩ : 
-
-    h←'#' # avoid breaking vims syntax highlighting
-    s←•file.Chars file 
-    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(file⊸(•Exit _CmpCatch)) s
-    bc‿·‿blockInfo‿bodyInfo‿loc‿·←cm ⋄ i‿·←loc # i: index of start position of bytecodes
-    ba‿·‿·‿·←instr
-
-    m ← { # Mask of instruction starts
-      n ← (↕≠bc)+1+ba(⊣⊏˜≠⊸>×⊢)bc
-      Se←≠(>/⊢)∾⟜≠{(⊏˜𝕨)𝕊⍟(≠○(¯1⊸⊑))𝕩∾𝕩⊏𝕨}⟨0⟩˙
-      (≠↑·/⁼Se) n
-    }
-
-    l←+`s=lf ⋄ g←l⊔s                      # line number  and grouped lines
-    pg ←+`(≠i)↑/⁼⊑¨bodyInfo
-    prt←{∨´(=⟜h∨(≠∘⊢↑"---"⊸⍷))𝕩}¨g 
-    prt↩∾(1¨¨g)×prt
-    prt↩ (≠i)↑/⁼(∧i)⍋/<⟜»prt # map nearest to bytecode locations and nearest bytecode
-    •Show prt
-    prt↩prt∧bc=6
-    #•Show  prt
-    #•SHow ⌈`¨pg⊔prt
-    prt↩/∾⌈`¨pg⊔prt
-    #•SHow bc=6
-    #•Show  prt
-
-    brk←{2⊑3↑𝕩⊔˜+`(=⟜h∨(≠∘⊢↑"??"⊸⍷))𝕩}¨g  
-    brk↩∾g{(≠𝕨)↑(0≠≠𝕩)×(Trim 2↓𝕩)⍷𝕨}¨brk
-    brk↩(i⊏brk)∧6≠m×bc                    # separate by pop instructions (6) and filter out only valid bytecode types
-    brk↩1↓(↕≠brk)⊔˜(0=⊒i)×brk×m×+`»⊸<brk  # group instruction sets and dedup same instructions on same line
-    brk↩⊑¨brk/˜(0≠≠)¨brk                  # break only on first match in group (ie. take first of break group)
+    src←•file.Chars file 
+    cm ← (⟨1⊸⊑¨•primitives, System 𝕨, ⟨⟩⟩⊸Compile)⎊(file⊸(•Exit _CmpCatch)) src
 
     # Saved data for imports
     ns←{
-      line  ⇐ l         # line numbers
-      cols  ⇐ ∾(↕≠)¨⊔˜l # column numbers
-      break ⇐ brk       # break point bytecode - accessed by pos
-      #print ⇐ prt       # print point bytecode - accessed by pos
-      print ⇐ ⟨⟩       # print point bytecode - accessed by pos
+      line  ⇐ +`src=lf         # line numbers
+      cols  ⇐ ∾(↕≠)¨⊔˜line # column numbers
       cm    ⇐ cm        # compilation result
-      src   ⇐ s         # raw source code (helps for debugging)
+      src   ⇐ src       # raw source code (helps for debugging)
 
       Get    ⇐ !∘"Import result referenced before completion"
       SetRet ⇐ {𝕊 v: Get↩{𝕊:v}}
@@ -224,7 +178,7 @@ Import ← {
 
 Run ⇐ {
   Import 𝕩
-  io.term.OutRaw •ToUTF8 lf∾˜"□"
+  io.term.OutRaw •ToUTF8 lf∾˜"-- dbq end --"
 }
 
 # f: lazy function to construct hashmap of variables

@@ -1,1 +1,3 @@
-a←10 ⋄ 1+{𝕩+a}¨↕2 # break on first bytecode matching +a ?? +a 
+import←•Import "break.b.import.bqn"
+import.F 1
+import.F 2
