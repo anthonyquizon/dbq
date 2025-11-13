@@ -254,10 +254,14 @@ Repl⇐{
     }
 
     # if e consume chars until letter (ANSI format parsing)
+    # else consume utf-8
     Input←{
        𝕊@:𝕊io.In@
     ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.In@
-    ;  𝕊𝕩:⟨𝕩⟩
+    ;  𝕊𝕩:𝕩<@+128?⟨𝕩⟩
+    ;  𝕊𝕩:𝕩<@+224?•FromUTF8𝕩∾⟨io.In@⟩
+    ;  𝕊𝕩:𝕩<@+240?•FromUTF8𝕩∾⟨io.In@,io.In@⟩
+    ;  𝕊𝕩:        •FromUTF8𝕩∾⟨io.In@,io.In@,io.In@⟩
     ; e𝕊𝕩:⊑𝕩∊∾'~'∾+⟜(↕26)¨"Aa"?𝕩
     ; e𝕊𝕩:𝕩∾e𝕊io.In@
     }
