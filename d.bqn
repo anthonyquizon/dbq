@@ -191,10 +191,8 @@ Run ⇐ {
   io.term.OutRaw •ToUTF8 lf∾˜"-- dbq end --"
 }
 
-# f: lazy function to construct hashmap of variables
-
+# vmap: lazy function to construct hashmap of variables
 Repl⇐{
-#!  𝕏· → ·
   𝕊 vmap:
     io.term.RawMode 1
     io.term.OutRaw •ToUTF8 prompt
@@ -234,7 +232,6 @@ Repl⇐{
 
     # Tip: use `cat -v` in the terminal to find out key codes
     # Map of key buffer to function that returns ch‿pos‿continue
-
     Map←{                                                                                              # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩  
       𝕩:𝕩≡e∾"[D"             ? ⟨ch,0⌈ps-1, 1⟩                                                          # arrow left
     ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,(≠ch)⌊ps+1,1⟩                                                       # arrow right
@@ -253,8 +250,7 @@ Repl⇐{
     ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,      1⟩
     }
 
-    # if e consume chars until letter (ANSI format parsing)
-    # else consume utf-8
+    # consume utf8 or ANSI control chars
     Input←{
        𝕊@:𝕊io.In@
     ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.In@
