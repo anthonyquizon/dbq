@@ -1,21 +1,20 @@
 #!/usr/bin/env bqn
 
-# repl 
-# import load
-
 ⟨Run,Repl⟩←{
   Out  ⇐ •Show
   In   ⇐ •term.CharB
   term ⇐ •term
-} •Import "./db.bqn"
+} •Import "./d.bqn"
 
-usage←∾∾⟜(@+10)¨⟨
-  "Usage: qbqn [options] [file.bqn [arguments]]"
-⟩
+#usage←∾∾⟜(@+10)¨⟨
+  #"Usage: qbqn [options] [file.bqn [arguments]]"
+#⟩
 
 flgs←{
   r⇐∾𝕩(⊣/˜·»⍷˜)⋈"-r"
 }•args 
 
-{𝕊:•Out usage⋄•Exit 0}⍟(0⊸=)≠•args 
-Run •wdpath∾'/'∾⊑•args
+{
+  0=≠𝕩 ? Repl @
+; Run •wdpath∾'/'∾⊑𝕩
+} •args

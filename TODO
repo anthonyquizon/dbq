@@ -1,4 +1,9 @@
 Next line hotkey in repl
+Print stack
+Go to next line
+)c for continue
+)n for next
+Show previous var values in same position
 Show previous and next lines for context
 Show Highlight current line
 REPL history from file
