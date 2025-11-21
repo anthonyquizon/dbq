@@ -14,7 +14,10 @@ io←•args
 
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 boldCyan‿red‿magenta‿boldRed‿reset←e⊸∾¨"[1;36m"‿"[31m"‿"[35m"‿"[1;31m"‿"[0m"
-bkt_next←0
+
+# flags
+flg_bkt←0
+flg_shw←0
 
 prompt←"    "
 
@@ -27,8 +30,7 @@ dbg_ops←⟨
   16,17,20,21,26,27,                                                                                   # Application
   18,19,23,22                                                                                          # Application with Nothing
 ⟩
-
-Trim←((∨`∧∨⟜«)' '⊸≠)⊸/
+shw_ops←⟨47,48,49,50,51⟩
 
 ctx‿dbg ← {𝕊:{
   s    ⇐ ⟨⟩
@@ -50,7 +52,12 @@ Show←{
   •Show 𝕩
 }
 
-Break←{bkt_next↩1⋄𝕩}
+ShowAll←{𝕊:
+  # TODO current line in file
+  flg_shw↩1
+}
+
+Break←{flg_bkt↩1⋄𝕩}
 
 syslist←⟨
     "bqn"‿•Bqn
@@ -76,6 +83,7 @@ syslist←⟨
     "primitives"‿•Primitives
     "repr"‿•Repr
     "show"‿Show
+    "showall"‿ShowAll
     "term"‿•term
     "toutf8"‿•ToUTF8
     "type"‿•Type
@@ -139,7 +147,7 @@ _PreHook←{vmap _𝕣 pos‿file‿stack:
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩      # TODO move this to repl?
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h(⊣/˜≠)lf,magenta,m,reset,t⟩
     Repl vmap
-  }⍟⊣ bkt_next
+  }⍟⊣ flg_bkt
 
   {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
@@ -147,6 +155,8 @@ _PreHook←{vmap _𝕣 pos‿file‿stack:
 _PostHook←{· _𝕣 pos‿file‿stack:
   ⟨cm⟩←imports.Get file ⋄ bc‿·‿·‿·‿·‿·←cm
   {𝕊: dbg.Pop 1}⍟⊣ (pos⊑bc)⍷dbg_ops
+  # TODO print location via loc
+  {𝕊:•Show (stack.Peek@) }⍟⊣ flg_shw∧(pos⊑bc)⍷shw_ops
 }
 
 # Hooks to run in VM
@@ -154,9 +164,11 @@ hooks←{
   _Pre  ⇐ _PreHook
   _Post ⇐ _PostHook
   _Err  ⇐ {vmap _𝕣 ·: VMCatch@ ⋄ Repl vmap}
+  End   ⇐ {𝕊: flg_shw↩0 }
 }
 
 # Wrap namespace to vm compatable namespace 
+# Import :: 𝕨 𝕊 𝕩 → 
 Import ← {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
 ; 𝕨 𝕊 ⟨file⇐file⟩ : imports.Has file ? (imports.Get file).Get @
@@ -192,6 +204,7 @@ Run ⇐ {
 }
 
 # vmap: lazy function to construct hashmap of variables
+# 𝕨 Repl 𝕩 → 1
 Repl⇐{
   𝕊 vmap:
     io.term.RawMode 1
@@ -202,10 +215,10 @@ Repl⇐{
 
     vmap↩Vmap @ ⋄ ch←⟨⟩ ⋄ ps←0 ⋄ cont←0                                                                # vmap: variable mappings. ch: character buffer. ps: cursor offset
     hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄Err⇐VMCatch}
-    bkt_next↩0
+    flg_bkt↩0
 
     Cmd←{
-      ch 𝕊·: ""≡Trim ch?                                                                               # ignore empty statements
+      ch 𝕊·: ""≡((∨`∧∨⟜«)' '⊸≠)⊸/ch?                                                                               # ignore empty statements
         io.term.OutRaw •ToUTF8 lf∾˜prompt
         ⟨⟩‿0‿1
     ; ch 𝕊·:
@@ -224,7 +237,7 @@ Repl⇐{
       ch‿(≠ch)‿1
     }
     Continue←{
-      𝕊:io.term.OutRaw lf∾˜"Continue"⋄bkt_next↩0
+      𝕊:io.term.OutRaw lf∾˜"Continue"⋄flg_bkt↩0
       ⟨⟩‿0‿0
     }
 
@@ -237,7 +250,7 @@ Repl⇐{
     ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,(≠ch)⌊ps+1,1⟩                                                       # arrow right
     ; 𝕩:𝕩≡e∾"[A"             ? SetHistory⟜¯1                                                           # arrow up
     ; 𝕩:𝕩≡e∾"[B"             ? SetHistory⟜1                                                            # arrow down
-    ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:bkt_next↩1⋄⟨⟩‿0‿0}                                                   # ctrl+; next bytecode
+    ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_bkt↩1⋄⟨⟩‿0‿0}                                                   # ctrl+; next bytecode
     ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,0,1⟩                                                                # 
     ; 𝕩:𝕩≡e∾"[27;5;13~"      ? Continue                                                                # ctrl+enter
     ; 𝕩:𝕩≡≍@+10              ? ch⊸Cmd                                                                  # enter and run command
@@ -251,6 +264,7 @@ Repl⇐{
     }
 
     # consume utf8 or ANSI control chars
+    # Input : N 𝕊 N → {x|x<⟨3,4⟩=≡}
     Input←{
        𝕊@:𝕊io.In@
     ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.In@

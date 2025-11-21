@@ -4,7 +4,7 @@
 
 **System function**
 ```bqn
-•Break@ # break at this line
+•BRK@ # break at this line
 ```
 
 **Key mappings**

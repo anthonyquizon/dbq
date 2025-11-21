@@ -207,6 +207,7 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
 
     stack.cont  # Changes to 0 on return or abort
   } •_while_ ⊢ 1
+  hooks.End file
   stack.rslt
 }
 
@@ -220,8 +221,6 @@ Eval⇐{ hooks‿vmap‿file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
-      # TODO set top level args if no parent (ie. {program⇐}) and injected args variable exists
-      # 𝕩 𝕨 args 
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
       hooks‿file RunBC bc‿start‿env‿args
@@ -236,13 +235,10 @@ Eval⇐{ hooks‿vmap‿file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token
       {𝕊n: {d←N 𝕣‿𝕗‿𝕘⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗‿𝕘}}
     ⟩
     # Handle arguments 𝕨 𝕩
-    outer ← imm ⊑ ⟨
-      {
-        m‿d: {𝕊v: {M 𝕤‿𝕩‿nothing∾v;D 𝕤‿𝕩‿𝕨∾v}} ;
-        ⟨b⟩: {𝕊v: {B 𝕤‿𝕩‿(𝕨⊣nothing)∾v}}
-      }
-      ⊑
-    ⟩
+    outer ← imm ⊑ ⟨{
+      m‿d: {𝕊v: {M 𝕤‿𝕩‿nothing∾v;D 𝕤‿𝕩‿𝕨∾v}} ;
+      ⟨b⟩: {𝕊v: {B 𝕤‿𝕩‿(𝕨⊣nothing)∾v}}
+    }, ⊑⟩
 
     # Assemble bodies
     nmc ← "No matching case"
@@ -258,18 +254,10 @@ Eval⇐{ hooks‿vmap‿file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token
       }𝕩
       𝕩 Then´⟜(⊏⟜bodies)˜⟜{!∘𝕩}¨ e
     } body
-
-    {𝕊 parent:
-      Inner Outer {parent˙ 𝕏 ⊢}¨ run
-    }
+    {𝕊 parent: Inner Outer {parent˙ 𝕏 ⊢}¨ run }
   }¨ blockInfo
 
-  program ← {
-    consts⇐consts
-    blocks⇐blocks
-    names⇐0⊑2⊑token
-    vmap⇐vmap
-  }
-
-  (⊑blocks){𝔽} {program⇐program}
+  (⊑blocks){𝔽} {program⇐{
+    consts⇐consts, blocks⇐blocks, names⇐0⊑2⊑token, vmap⇐vmap
+  }}
 }
