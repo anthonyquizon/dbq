@@ -168,7 +168,7 @@ hooks←{
 }
 
 # Wrap namespace to vm compatable namespace 
-# Import :: 𝕨 𝕊 𝕩 → 
+#! _∨(𝕩:⟨m,n⟩) 𝕊 ⟨file⇐⟩ → 
 Import ← {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
 ; 𝕨 𝕊 ⟨file⇐file⟩ : imports.Has file ? (imports.Get file).Get @
@@ -204,7 +204,7 @@ Run ⇐ {
 }
 
 # vmap: lazy function to construct hashmap of variables
-# 𝕨 Repl 𝕩 → 1
+#! (· → C •HashMap C) → ·
 Repl⇐{
   𝕊 vmap:
     io.term.RawMode 1
@@ -218,7 +218,7 @@ Repl⇐{
     flg_bkt↩0
 
     Cmd←{
-      ch 𝕊·: ""≡((∨`∧∨⟜«)' '⊸≠)⊸/ch?                                                                               # ignore empty statements
+      ch 𝕊·: ""≡((∨`∧∨⟜«)' '⊸≠)⊸/ch?                                                                   # ignore empty statements
         io.term.OutRaw •ToUTF8 lf∾˜prompt
         ⟨⟩‿0‿1
     ; ch 𝕊·:
@@ -245,12 +245,13 @@ Repl⇐{
 
     # Tip: use `cat -v` in the terminal to find out key codes
     # Map of key buffer to function that returns ch‿pos‿continue
+    #! C → (· → ⟨C,F,0∨1⟩)
     Map←{                                                                                              # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩  
       𝕩:𝕩≡e∾"[D"             ? ⟨ch,0⌈ps-1, 1⟩                                                          # arrow left
     ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,(≠ch)⌊ps+1,1⟩                                                       # arrow right
     ; 𝕩:𝕩≡e∾"[A"             ? SetHistory⟜¯1                                                           # arrow up
     ; 𝕩:𝕩≡e∾"[B"             ? SetHistory⟜1                                                            # arrow down
-    ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_bkt↩1⋄⟨⟩‿0‿0}                                                   # ctrl+; next bytecode
+    ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_bkt↩1⋄⟨⟩‿0‿0}                                                    # ctrl+; next bytecode
     ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,0,1⟩                                                                # 
     ; 𝕩:𝕩≡e∾"[27;5;13~"      ? Continue                                                                # ctrl+enter
     ; 𝕩:𝕩≡≍@+10              ? ch⊸Cmd                                                                  # enter and run command
@@ -264,7 +265,7 @@ Repl⇐{
     }
 
     # consume utf8 or ANSI control chars
-    # Input : N 𝕊 N → {x|x<⟨3,4⟩=≡}
+    #! _∨e 𝕊 @∨C → C 
     Input←{
        𝕊@:𝕊io.In@
     ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.In@
@@ -276,6 +277,7 @@ Repl⇐{
     ; e𝕊𝕩:𝕩∾e𝕊io.In@
     }
 
+    #! · → 0∨1
     {𝕊:
       eff←Map Input@⋄ch‿ps‿cont↩Eff@
       io.term.OutRaw clear                                                                             # clear line and set to start of line

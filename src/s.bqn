@@ -30,7 +30,19 @@ r←•MakeRand 10
 
 _Gen←{ F _𝕣 𝕩:
   p←v←r.Deal ×´𝕩
-  •Show 10 r.Range 10
+  •SHow "--"
+  •Show b←30 r.Range 2
+  #•Show c←7≥30 r.Range 10
+  #•Show d←6≥30 r.Range 10
+  #•Show e←8≥30 r.Range 10
+  #•SHow b×c
+  #•SHow b×c×d
+  #•SHow t←e/b×c×d
+
+
+
+  
+
   #m←(10 r.Deal ×´𝕩)×(r.Deal<r.Deal) ×´𝕩
   #•SHow m
   #•Show 𝕩⥊v
