@@ -20,7 +20,7 @@ Test←{
       In   ⇐ {𝕊:t←⊑1↑inb⋄inb↩1↓inb⋄t}
       term ⇐ term
     }
-    ⟨Run⟩←args •Import "../d.bqn"
+    ⟨Run⟩←args •Import "../src/d.bqn"
     Run •path∾'/'∾file
 
     # TODO diff

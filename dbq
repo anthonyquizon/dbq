@@ -4,7 +4,7 @@
   Out  ⇐ •Show
   In   ⇐ •term.CharB
   term ⇐ •term
-} •Import "./d.bqn"
+} •Import "./src/d.bqn"
 
 #usage←∾∾⟜(@+10)¨⟨
   #"Usage: qbqn [options] [file.bqn [arguments]]"
