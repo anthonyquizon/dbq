@@ -12,13 +12,16 @@ Init←{𝕊:
   p←C_init ⟨⟩
 
   Gen⇐{
+    q←⍷∾|𝕩
     C_add¨p⊸∾⌜∾∾⟜0¨𝕩  
     C_sat p‿100
+    ⍉q∾˘C_deref¨p⊸∾⌜q # return literals under variable index
   }
 }
 
+•Show "--"
 p←Init@
-•Show p.Gen ⟨ 1‿¯2, 1‿2 ⟩
+•Show p.Gen ⟨ 1‿¯2, 1‿2, 9‿2, 7‿3 ⟩
 
 #unknown‿sat‿unsat←0‿10‿20
 
