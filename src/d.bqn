@@ -214,7 +214,7 @@ Repl⇐{
     hn←1-˜≠history←⟨⟩                                                                                  # TODO read history from file
 
     vmap↩Vmap @ ⋄ ch←⟨⟩ ⋄ ps←0 ⋄ cont←0                                                                # vmap: variable mappings. ch: character buffer. ps: cursor offset
-    hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄Err⇐VMCatch}
+    hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄_Err⇐{_𝕣:VMCatch}⋄End⇐{𝕩}}
     flg_bkt↩0
 
     Cmd←{
@@ -242,22 +242,23 @@ Repl⇐{
     }
 
     Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch}                                               # add 𝕩 into ch at ps position with 𝕨 deletions
+    Exit ←{𝕊:io.term.OutRaw •ToUTF8 lf∾˜""⋄•Exit 0 }                                                   # add trailing newline before exit to keep terminal happy
 
     # Tip: use `cat -v` in the terminal to find out key codes
     # Map of key buffer to function that returns ch‿pos‿continue
-    #! C → (· → ⟨C,F,0∨1⟩)
     Map←{                                                                                              # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩  
       𝕩:𝕩≡e∾"[D"             ? ⟨ch,0⌈ps-1, 1⟩                                                          # arrow left
     ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,(≠ch)⌊ps+1,1⟩                                                       # arrow right
     ; 𝕩:𝕩≡e∾"[A"             ? SetHistory⟜¯1                                                           # arrow up
     ; 𝕩:𝕩≡e∾"[B"             ? SetHistory⟜1                                                            # arrow down
     ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_bkt↩1⋄⟨⟩‿0‿0}                                                    # ctrl+; next bytecode
-    ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,0,1⟩                                                                # 
+    ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,0,1⟩
     ; 𝕩:𝕩≡e∾"[27;5;13~"      ? Continue                                                                # ctrl+enter
     ; 𝕩:𝕩≡≍@+10              ? ch⊸Cmd                                                                  # enter and run command
     ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "", 0⌈ps-1, 1⟩                                                 # backspace
     ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,0,1⟩                                                                # ctrl+u
-    ; 𝕩:𝕩≡≍@+3               ? {•Exit 0}                                                               # ctrl+c
+    ; 𝕩:𝕩≡≍@+3               ? Exit                                                                    # ctrl+c
+    ; 𝕩:𝕩≡≍@+4               ? Exit                                                                    # Ctrl+d
     ; 𝕩:0=≠ch                ? ⟨𝕩,1,1⟩
     ; 𝕩:'\'=ch(⊣⊑˜0⌈≠⊸⌊)ps-1 ? z←uni/˜asc∊𝕩
                                ⟨ch0←1 Patch z, (≠z)+ps-1, 1⟩                                           # replace '/' with unicode chars
@@ -265,7 +266,6 @@ Repl⇐{
     }
 
     # consume utf8 or ANSI control chars
-    #! _∨e 𝕊 @∨C → C 
     Input←{
        𝕊@:𝕊io.In@
     ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.In@
@@ -277,7 +277,6 @@ Repl⇐{
     ; e𝕊𝕩:𝕩∾e𝕊io.In@
     }
 
-    #! · → 0∨1
     {𝕊:
       eff←Map Input@⋄ch‿ps‿cont↩Eff@
       io.term.OutRaw clear                                                                             # clear line and set to start of line

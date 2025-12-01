@@ -182,12 +182,17 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
 ⟩
 
 # convert env to hashmap - variable names to functions that return variables
+# env 𝕊 args→(𝕊→vmap)
 MakeVmap←{ 
-  h 𝕊 ⟨vars⇐vars⋄parent⇐parent⟩:
-    v←vars/˜{1∘𝕩.Get⎊0 @}¨vars
-    ({𝕩.n}¨v) {𝕨 {𝕨 h.Set 𝕩.Get@}⍟(¬∘h.Has⊢) 𝕩}¨v
-    h 𝕊 parent
-; h 𝕊 ·: h
+  env 𝕊 args: {𝕊: 
+    h←"𝕊𝕩𝕨"•HashMap 3↑args
+    h⊣{ 
+      𝕊 ⟨vs⇐vars⋄p⇐parent⟩:
+        v←vs/˜{1∘𝕩.Get⎊0 @}¨vs ⋄ ({𝕩.n}¨v) {𝕨 {𝕨 h.Set 𝕩.Get@}⍟(¬∘h.Has⊢) 𝕩}¨v
+        𝕊 p
+    ; 𝕊 ·: h 
+    } env
+  } 
 }
 
 # Evaluate a body
@@ -199,8 +204,7 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
     op ← (Next@) ⊑ ops
     op ↩ Op next
 
-    Vmap←{𝕊: h←"𝕊𝕩𝕨" •HashMap 3↑args ⋄ h MakeVmap env ⋄ h } # lazy function to construct variable map from env and args
-
+    vmap←env MakeVmap args
     vmap hooks._Pre i‿file‿stack
     stack Op⎊{𝕊:vmap hooks._Err i‿file} env
     vmap hooks._Post i‿file‿stack
@@ -219,8 +223,7 @@ Eval⇐{ hooks‿vmap‿file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token
   }¨↩
   
   bodies ← {start‿vars‿names‿export:
-    # Called when the body is evaluated
-    {parent 𝕊 args:
+    {parent 𝕊 args: # Called when the body is evaluated
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
       hooks‿file RunBC bc‿start‿env‿args
@@ -241,20 +244,17 @@ Eval⇐{ hooks‿vmap‿file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token
     }, ⊑⟩
 
     # Assemble bodies
-    nmc ← "No matching case"
+    nmc  ← "No matching case"
     Then ← {first 𝕊 next: {skipMark≢r←𝕨First𝕩 ? r ; 𝕨Next𝕩}}
-    run ← {
-      1=•Type 𝕩 ?
-      ⟨(𝕩⊑bodies) Then {!∘nmc}⟩
-    ;
-      "Internal compiler error: Invalid body indices" ! 1==𝕩
-      ! (≠𝕩) ≡ 2-imm
-      e ← {imm ? ⟨nmc⟩ ;
-        (0=≠¨𝕩) nmc⍟⊣¨ "Left argument "⊸∾¨⟨"not allowed","required"⟩
-      }𝕩
-      𝕩 Then´⟜(⊏⟜bodies)˜⟜{!∘𝕩}¨ e
+    run  ← {
+      1=•Type 𝕩  ? ⟨(𝕩⊑bodies) Then {!∘nmc}⟩
+    ; 1≠=𝕩       ? "Internal compiler error: Invalid body indices"!0
+    ; (≠𝕩)≢2-imm ? ""!0 # TODO error message
+    ; 𝕩 Then´⟜(⊏⟜bodies)˜⟜{!∘𝕩}¨{
+          imm?⟨nmc⟩;(0=≠¨𝕩)nmc⍟⊣¨"Left argument"⊸∾¨⟨"not allowed","required"⟩
+        } 𝕩
     } body
-    {𝕊 parent: Inner Outer {parent˙ 𝕏 ⊢}¨ run }
+    {𝕊 par: Inner Outer {par 𝕏 ⊢}¨run}
   }¨ blockInfo
 
   (⊑blocks){𝔽} {program⇐{

@@ -27,12 +27,22 @@ Init←{𝕊:
   End⇐{𝕊: C_reset⋈p }
 }
 
-•Show "--"
-p←Init@
-•Show p.Gen ⟨ 1‿¯2, 1‿2, 9‿2, 7‿3 ⟩
-p.End@
+#•Show "--"
+#p←Init@
+#•Show p.Gen ⟨ 1‿¯2, 1‿2, 9‿2, 7‿3 ⟩
+#p.End@
+
+
+•Show 1=100
+#•Show ∨´(1=•Type)¨"woo"
 
 # encode ∃∀x<≠x | xᵢ<x
+#! ⟨r₁...⟩
+#! ⟨x,n⟩|(xᵢ=xⱼ,i≠j) () → 
+#Foo←{
+  #𝕩: 𝕩⊏𝕩
+#}
+
 
 
 #C_add p‿1
@@ -52,7 +62,21 @@ p.End@
 
 ##C_set_seed ⟨p, 100⟩
 
+C←{
+  𝕊  𝕩: 2=•Type𝕩
+; 𝕊⁼ ⟨foo⇐foo⟩: foo
+; 𝕊⁼ 𝕩: 111
+}
+
+
 r←•MakeRand 10
+
+•Show 2=•Type¨⟨1,'c',3⟩
+•Show ∨´2=•Type¨⟨1,'c',3⟩
+
+•Show C⁼ {foo⇐2}
+•Show C⁼ 111
+•Show '0'+100 r.Range 100
 #gr←2 ⋄ gl←1.5⋄ sr←1⋄ sl←0.9                     # sl: length shrink factor, gr: range factor, rs: shrink range factor, gl: length factor
 
 # G: generator function
@@ -79,6 +103,10 @@ r←•MakeRand 10
   #⟩ rs
 #}
 
+# get domain with random distribution
+# propagator D→⊆D
+# a=b -> a-b→c, 0‿1‿1
+
 _Gen←{ F _𝕣 𝕩:
   p←v←r.Deal ×´𝕩
   •SHow "--"
@@ -89,21 +117,16 @@ _Gen←{ F _𝕣 𝕩:
   #•SHow b×c
   #•SHow b×c×d
   #•SHow t←e/b×c×d
-
-
-
-  
-
   #m←(10 r.Deal ×´𝕩)×(r.Deal<r.Deal) ×´𝕩
   #•SHow m
   #•Show 𝕩⥊v
   #•Show 𝕩⥊v+m
 
   #{𝕊:
-
     #⎊
   #} •_While_ ⊣ 1
 }
+
 
 Fmt←{c𝕊q:                                       # format string to replace ⌾X values 
   k←»z←c='⌾' ⋄ c‿k (¬z)⊸/˜¨↩                    # with empty strings as default value
@@ -111,9 +134,11 @@ Fmt←{c𝕊q:                                       # format string to replace 
 }
 
 #~ 𝕩:⟨4,3⟩ → ⟨4,3⟩ | 𝕩>0
-F←{ 𝕩+1 }
+#F←{ 𝕩+1 }
 
-F _Gen 4‿3
+#F _Gen 4‿3
+
+
 
 #prop⇐{
   #r←•MakeRand 10
