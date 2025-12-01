@@ -121,8 +121,12 @@ PrintStackTrace←{𝕊:
 _CmpCatch←{ f Exit _𝕣 src:
   l←+`src=lf ⋄ sl←(lf⊸≠)⊸/¨src⊔˜»+`lf=src                                                              # l: line numbers, sl: source file in lines
 
+  •Show •CurrentError@
   { 𝕊 loc‿msg:
-      s‿e←loc↩⥊loc
+      #•SHow msg
+      #•SHow ⥊loc
+      s‿e←loc↩⥊⊑˘loc
+      # TODO locations
       io.term.OutRaw •ToUTF8 lf∾˜"Error: "∾msg
       io.term.OutRaw •ToUTF8 lf∾˜(s⊑l)⊑sl
       io.term.OutRaw •ToUTF8 lf∾˜⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
