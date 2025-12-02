@@ -1,18 +1,53 @@
 #!/usr/bin/env bqn
 
+#usage←∾∾⟜(@+10)¨⟨
+  #"Usage: qbqn [options] [file.bqn [arguments]]"
+#⟩
+
+
+#flgs←[
+  #"--f"‿1‿"This is help text", 
+  #"-r" ‿0‿"this is help text"
+#]
+
+#•SHow [a,b]←0‿1⊏⍉flgs
+#•Show b
+#•SHow '-'⊸⍷¨•args
+
+#args←{
+  ##Fv←𝕩⊸(⊣/˜·»⍷˜)⟜⋈
+  ##F1←⟨⟩⊸≢𝕩⊸(⊣/˜⍷˜)⟜⋈
+
+  ##r⇐Fv"-r"
+  ##q⇐F1"-q"
+#}•args 
+
+
+#•Show a.r
+
+#m←(∨´'-'⊸⍷)¨•args
+#•Show {𝕩/˜¬'-'⊸⍷𝕩}¨m/•args
+#•SHow "{}"
+#•Show {∨´•SHow'-'⍷𝕩}¨•args
+
+#e←@+27
+#i←0
+#⟨Run,Repl⟩←{
+  #Out⇐•Show
+  #In⇐{𝕊:z←i⊑e∾"[27;5;13~"⋄i↩i+1⋄z}
+  #term ⇐{
+    #OutRaw  ⇐ {𝕩}
+    #Flush   ⇐ {𝕩}
+    #RawMode ⇐ {𝕩}
+  #}
+#} •Import "./src/d.bqn"
+
+
 ⟨Run,Repl⟩←{
   Out  ⇐ •Show
   In   ⇐ •term.CharB
   term ⇐ •term
 } •Import "./src/d.bqn"
-
-#usage←∾∾⟜(@+10)¨⟨
-  #"Usage: qbqn [options] [file.bqn [arguments]]"
-#⟩
-
-flgs←{
-  r⇐∾𝕩(⊣/˜·»⍷˜)⋈"-r"
-}•args 
 
 {
   0=≠𝕩 ? Repl "𝕊𝕩𝕨"•HashMap @¨↕3

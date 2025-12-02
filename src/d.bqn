@@ -82,6 +82,7 @@ syslist←⟨
     "path"‿•path
     "primitives"‿•Primitives
     "repr"‿•Repr
+    "rand"‿•rand
     "show"‿Show
     "showall"‿ShowAll
     "term"‿•term
@@ -208,7 +209,6 @@ Run ⇐ {
 }
 
 # vmap: lazy function to construct hashmap of variables
-#! (· → C •HashMap C) → ·
 Repl⇐{
   𝕊 vmap:
     io.term.RawMode 1

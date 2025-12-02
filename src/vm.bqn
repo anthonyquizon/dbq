@@ -12,7 +12,7 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 MakeVar ← { program 𝕊 name:
-  n⇐name⊑program.names
+  n⇐(=⟜¯1)◶⟨⊑⟜program.names,"no name"⟩ name
   v⇐@  # Value
   Get ⇐ {𝕊:
     err←"Runtime: Variable referenced before definition"
@@ -204,9 +204,12 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
     op ← (Next@) ⊑ ops
     op ↩ Op next
 
+    •Show ⟨i⊑bc,stack.s⟩
     vmap←env MakeVmap args
     vmap hooks._Pre i‿file‿stack
-    stack Op⎊{𝕊:vmap hooks._Err i‿file} env
+    # TODO toggle base bqn interpreter errors vs caught errors since stack is not captured
+    stack Op env
+    #stack Op⎊{𝕊:vmap hooks._Err i‿file} env
     vmap hooks._Post i‿file‿stack
 
     stack.cont  # Changes to 0 on return or abort
@@ -218,19 +221,22 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
 # Evaluate a program, given the compiler output
 Eval⇐{ hooks‿vmap‿file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts { # Wrap namespace to vm compatable namespace 
-    𝕊 ns: 6≡•Type ns ?  Field⇐{p𝕊i: Get ⇐ {𝕊:ns •ns.Get i⊑p.names}}
+    𝕊 ns: 6≡•Type ns?Field⇐{p𝕊i: Get ⇐ {𝕊:ns •ns.Get i⊑p.names}}
   ; 𝕊 𝕩: 𝕩
   }¨↩
   
   bodies ← {start‿vars‿names‿export:
     {parent 𝕊 args: # Called when the body is evaluated
       env ← MakeEnv parent‿vars‿names‿export
-      (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
+      (⊢ {𝕩.SetN 𝕨}¨≠↑env.vars˙) args  # Initialize arguments
+      •Show [↕≠bc,bc]
+      •SHow [↕≠consts, consts]
       hooks‿file RunBC bc‿start‿env‿args
     }
   }¨ bodyInfo
 
   blocks ← {type‿imm‿body:
+    •SHow type‿imm‿body
     # Handle operands - modifier arguments 𝔽 𝔾
     inner ← imm ⊑ type ⊑ ⟨
       2⥊⟨{𝕊n: N ⟨⟩}⟩
