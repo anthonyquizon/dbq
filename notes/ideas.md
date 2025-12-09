@@ -12,3 +12,6 @@ undo predicate indicates output data contract
 }
 
 ```
+
+run in self hosted vm for instrumention/generation/repl
+run in cbqn for fuzzing if possible

@@ -210,7 +210,7 @@ Run ⇐ {
 
 # vmap: lazy function to construct hashmap of variables
 Repl⇐{
-  𝕊 vmap:
+  𝕊 vmap: 3=•Type vmap ?
     io.term.RawMode 1
     io.term.OutRaw •ToUTF8 prompt
     io.term.Flush@

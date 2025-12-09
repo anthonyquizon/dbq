@@ -3,3 +3,4 @@ _ref/
 .DS_Store
 *.so
 *.o
+a.out
