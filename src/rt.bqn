@@ -7,6 +7,9 @@ glyphs ← ⟨
 
 compile ← glyphs •Import "c.bqn"
 vm      ←        •Import "vm.bqn"
+⟨Repl⟩  ←        •Import "repl.bqn"
+
+#c_watch←"../cbits/lib.so" •FFI ""‿
 
 # TODO if args is namespace
 # else use default namespace
@@ -206,91 +209,5 @@ Import ← {
 Run ⇐ {
   Import 𝕩
   io.term.OutRaw •ToUTF8 lf∾˜"-- dbq end --"
-}
-
-# vmap: lazy function to construct hashmap of variables
-Repl⇐{
-  𝕊 vmap: 3=•Type vmap ?
-    io.term.RawMode 1
-    io.term.OutRaw •ToUTF8 prompt
-    io.term.Flush@
-
-    hn←1-˜≠history←⟨⟩                                                                                  # TODO read history from file
-
-    vmap↩Vmap @ ⋄ ch←⟨⟩ ⋄ ps←0 ⋄ cont←0                                                                # vmap: variable mappings. ch: character buffer. ps: cursor offset
-    hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄_Err⇐{_𝕣:VMCatch}⋄End⇐{𝕩}}
-    flg_bkt↩0
-
-    Cmd←{
-      ch 𝕊·: ""≡((∨`∧∨⟜«)' '⊸≠)⊸/ch?                                                                   # ignore empty statements
-        io.term.OutRaw •ToUTF8 lf∾˜prompt
-        ⟨⟩‿0‿1
-    ; ch 𝕊·:
-        io.term.OutRaw clear
-        io.term.OutRaw •ToUTF8 lf∾˜prompt∾ch
-        in←"x__arg‿w__arg←•args ⋄ w__arg {𝕊:"∾ch∾"} x__arg"                                            # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables 
-        cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
-        {@:1; io.Out hooks‿vmap‿@ vm.Eval 𝕩} cm
-        hn↩≠history ∾⟜(⋈ch) ↩
-        ⟨⟩‿0‿1
-    }
-
-    SetHistory←{
-      0=≠history? ""‿0‿1
-    ; ch↩history⊑˜hn↩(1-˜≠history)⌊0⌈𝕩+hn
-      ch‿(≠ch)‿1
-    }
-    Continue←{
-      𝕊:io.term.OutRaw lf∾˜"Continue"⋄flg_bkt↩0
-      ⟨⟩‿0‿0
-    }
-
-    Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch}                                               # add 𝕩 into ch at ps position with 𝕨 deletions
-    Exit ←{𝕊:io.term.OutRaw •ToUTF8 lf∾˜""⋄•Exit 0 }                                                   # add trailing newline before exit to keep terminal happy
-
-    # Tip: use `cat -v` in the terminal to find out key codes
-    # Map of key buffer to function that returns ch‿pos‿continue
-    Map←{                                                                                              # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩  
-      𝕩:𝕩≡e∾"[D"             ? ⟨ch,0⌈ps-1, 1⟩                                                          # arrow left
-    ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,(≠ch)⌊ps+1,1⟩                                                       # arrow right
-    ; 𝕩:𝕩≡e∾"[A"             ? SetHistory⟜¯1                                                           # arrow up
-    ; 𝕩:𝕩≡e∾"[B"             ? SetHistory⟜1                                                            # arrow down
-    ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_bkt↩1⋄⟨⟩‿0‿0}                                                    # ctrl+; next bytecode
-    ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,0,1⟩
-    ; 𝕩:𝕩≡e∾"[27;5;13~"      ? Continue                                                                # ctrl+enter
-    ; 𝕩:𝕩≡≍@+10              ? ch⊸Cmd                                                                  # enter and run command
-    ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "", 0⌈ps-1, 1⟩                                                 # backspace
-    ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,0,1⟩                                                                # ctrl+u
-    ; 𝕩:𝕩≡≍@+3               ? Exit                                                                    # ctrl+c
-    ; 𝕩:𝕩≡≍@+4               ? Exit                                                                    # Ctrl+d
-    ; 𝕩:0=≠ch                ? ⟨𝕩,1,1⟩
-    ; 𝕩:'\'=ch(⊣⊑˜0⌈≠⊸⌊)ps-1 ? z←uni/˜asc∊𝕩
-                               ⟨ch0←1 Patch z, (≠z)+ps-1, 1⟩                                           # replace '/' with unicode chars
-    ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,      1⟩
-    }
-
-    # consume utf8 or ANSI control chars
-    Input←{
-       𝕊@:𝕊io.In@
-    ;  𝕊𝕩:𝕩=e?𝕩∾e𝕊io.In@
-    ;  𝕊𝕩:𝕩<@+128?⟨𝕩⟩
-    ;  𝕊𝕩:𝕩<@+224?•FromUTF8𝕩∾⟨io.In@⟩
-    ;  𝕊𝕩:𝕩<@+240?•FromUTF8𝕩∾⟨io.In@,io.In@⟩
-    ;  𝕊𝕩:        •FromUTF8𝕩∾⟨io.In@,io.In@,io.In@⟩
-    ; e𝕊𝕩:⊑𝕩∊∾'~'∾+⟜(↕26)¨"Aa"?𝕩
-    ; e𝕊𝕩:𝕩∾e𝕊io.In@
-    }
-
-    {𝕊:
-      eff←Map Input@⋄ch‿ps‿cont↩Eff@
-      io.term.OutRaw clear                                                                             # clear line and set to start of line
-      io.term.OutRaw •ToUTF8 prompt
-      io.term.OutRaw •ToUTF8 ch
-      io.term.OutRaw e∾"["∾(•Fmt (≠prompt)+ps+1)∾"G"
-      io.term.Flush@
-      cont
-    }•_while_ ⊢ 1
-
-    io.term.OutRaw •ToUTF8 lf∾˜""
 }
 

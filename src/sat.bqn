@@ -1,6 +1,6 @@
 
 # picosat?
-FFI←{"../extern/libpicosat.so" •FFI 𝕩}
+FFI←{"../cbits/libpicosat.so" •FFI 𝕩}
 
 none‿sat‿unsat←0‿10‿20
 
