@@ -17,6 +17,7 @@ typedef size_t ux;
  * Basic types
  */
 typedef struct {
+    data;
     //TODO
 } Arr;
 

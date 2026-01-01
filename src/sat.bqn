@@ -1,16 +1,15 @@
 
 # picosat?
-FFI←{"../cbits/libpicosat.so" •FFI 𝕩}
-
+lib←"../cbits/libpicosat.so"
 none‿sat‿unsat←0‿10‿20
 
-c_init     ← FFI "*"‿"picosat_init"
-c_reset    ← FFI ""‿"picosat_reset"‿"*"
-c_set_seed ← FFI ""‿"picosat_set_seed"‿"*"‿"i32"
-c_print    ← FFI ""‿"picosat_print"‿"*"‿"*u32"
-c_sat      ← FFI "i32"‿"picosat_sat"‿"*"‿"u32"
-c_add      ← FFI "i32"‿"picosat_add"‿"*"‿"i32"
-c_deref    ← FFI "i32"‿"picosat_deref"‿"*"‿"i32"
+c_init     ← lib •FFI "*"‿"picosat_init"
+c_reset    ← lib •FFI ""‿"picosat_reset"‿"*"
+c_set_seed ← lib •FFI ""‿"picosat_set_seed"‿"*"‿"i32"
+c_print    ← lib •FFI ""‿"picosat_print"‿"*"‿"*u32"
+c_sat      ← lib •FFI "i32"‿"picosat_sat"‿"*"‿"u32"
+c_add      ← lib •FFI "i32"‿"picosat_add"‿"*"‿"i32"
+c_deref    ← lib •FFI "i32"‿"picosat_deref"‿"*"‿"i32"
 
 Init←{𝕊:
   p←C_init ⟨⟩

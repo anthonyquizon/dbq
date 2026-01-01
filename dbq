@@ -43,13 +43,21 @@
 #} •Import "./src/d.bqn"
 
 
-⟨Run,Repl⟩←{
-  Out  ⇐ •Show
-  In   ⇐ •term.CharB
-  term ⇐ •term
-} •Import "./src/d.bqn"
+# TODO compile if possible
+# TODO if watch has been enabled
+MakeFFI ← {𝕊:
+  foo⇐"foo" •FFI ""
+}
+x←{𝕊:Foo⇐{𝕊: •Show "none!"}}⎊MakeFFI @
+x.Foo @
 
-{
-  0=≠𝕩 ? Repl "𝕊𝕩𝕨"•HashMap @¨↕3
-; Run •wdpath∾'/'∾⊑𝕩
-} •args
+#⟨Run,Repl⟩←{
+  #Out  ⇐ •Show
+  #In   ⇐ •term.CharB
+  #term ⇐ •term
+#} •Import "./src/d.bqn"
+
+#{
+  #0=≠𝕩 ? Repl "𝕊𝕩𝕨"•HashMap @¨↕3
+#; Run •wdpath∾'/'∾⊑𝕩
+#} •args
