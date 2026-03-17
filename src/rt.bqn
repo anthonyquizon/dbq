@@ -10,11 +10,6 @@ vm      ←        •Import "vm.bqn"
 
 io←•args
 
-#c_watch←"../cbits/lib.so" •FFI ""‿
-
-# TODO if args is namespace
-# else use default namespace
-
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 boldCyan‿red‿magenta‿boldRed‿reset←e⊸∾¨"[1;36m"‿"[31m"‿"[35m"‿"[1;31m"‿"[0m"
 
@@ -156,17 +151,8 @@ _PreHook←{vmap _𝕣 pos‿file‿stack:
   ; 𝕩:@
   }⍟⊣⊑brk∊˜i⊑line
 
-  {𝕊:
-    i←pos⊑⊑loc ⋄ o←|-´pos⊑¨loc ⋄ c←i⊑cols ⋄ l←i⊑line ⋄ ln←l⊑line⊔src                                   # i: position from bc to src. o: offset between start and end postions. c: current column number. l: current line number. ln: current line as string
-    h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln                                                                  # h: head, m: middle, t: tail
-    io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩      # TODO move this to repl?
-    io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h(⊣/˜≠)lf,magenta,m,reset,t⟩
-
-    # print top and bottom lines
-    
-
-    Repl vmap
-  }⍟⊣ flg_brk
+  # TODO cleanup
+  {𝕊:Repl vmap‿cm‿file‿pos}⍟⊣ flg_brk
 
   {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
@@ -178,11 +164,17 @@ _PostHook←{· _𝕣 pos‿file‿stack:
   {𝕊:•Show (stack.Peek@) }⍟⊣ flg_shw∧(pos⊑bc)⍷shw_ops
 }
 
+_ErrorHook←{vmap _𝕣 pos‿file‿·:
+  ⟨cm,src,cols,brk,line⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
+  VMCatch@
+  Repl vmap‿cm‿file‿pos
+}
+
 # Hooks to run in VM
 hooks←{
   _Pre  ⇐ _PreHook
   _Post ⇐ _PostHook
-  _Err  ⇐ {vmap _𝕣 ·: VMCatch@ ⋄ Repl vmap}
+  _Err  ⇐ _ErrorHook
   End   ⇐ {𝕊: flg_shw↩0 }
 }
 
@@ -218,8 +210,15 @@ Import ← {
 }
 
 Repl⇐{
-  𝕊 vmap: 3=•Type vmap ?
+  𝕊 vmap‿cm‿file‿pos: 3=•Type vmap ?
+    ⟨src,cols,line⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
+    # TODO cleanup
+    i←pos⊑⊑loc ⋄ o←|-´pos⊑¨loc ⋄ c←i⊑cols ⋄ l←i⊑line ⋄ ln←l⊑line⊔src                                   # i: position from bc to src. o: offset between start and end postions. c: current column number. l: current line number. ln: current line as string
+    h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln                                                                  # h: head, m: middle, t: tail
+
     io.term.RawMode 1
+    io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩      # TODO move this to repl?
+    io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h(⊣/˜≠)lf,magenta,m,reset,t⟩
     io.term.OutRaw •ToUTF8 prompt
     io.term.Flush@
 
@@ -234,12 +233,23 @@ Repl⇐{
     ; ch↩history⊑˜hn↩(1-˜≠history)⌊0⌈𝕩+hn
       ch‿(≠ch)‿1
     }
-    Continue←{ 𝕊:
+
+    Continue←{𝕊:
       io.term.OutRaw clear
       io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
       io.term.OutRaw lf∾˜"Continue"
       flg_brk↩0
       ⟨⟩‿0‿0
+    }
+
+    Reload←{𝕊:
+      imports←•HashMap˜⟨⟩
+      ⟨⟩‿0‿0
+    }
+
+    Help←{𝕊: 
+      # TODO
+      ⟨⟩‿0‿1
     }
 
     Cmd←{
@@ -254,6 +264,15 @@ Repl⇐{
     ; ")c": Continue 𝕩
     ; ")cont": Continue 𝕩
     ; ")continue": Continue 𝕩
+    ; ")r": Continue 𝕩
+    ; ")reload": Continue 𝕩
+    ; ")h": Help 𝕩
+    ; ")help": Help 𝕩
+    ; 𝕩: ")"≡1↑𝕩 ? 
+        io.term.OutRaw clear
+        io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
+        io.term.OutRaw •ToUTF8 lf∾˜"unknown command"
+        ⟨⟩‿0‿1
     ; 𝕩:
         io.term.OutRaw clear
         io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
@@ -314,7 +333,6 @@ Repl⇐{
 
     io.term.OutRaw •ToUTF8 lf∾˜""
 }
-
 
 Run ⇐ {
   Import 𝕩

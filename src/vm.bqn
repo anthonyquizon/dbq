@@ -209,7 +209,7 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
     vmap hooks._Pre i‿file‿stack
     # TODO toggle base bqn interpreter errors vs caught errors since stack is not captured
     #stack Op env
-    stack Op⎊{𝕊:vmap hooks._Err i‿file} env
+    stack Op⎊{𝕊:vmap hooks._Err i‿file‿stack} env
     vmap hooks._Post i‿file‿stack
 
     stack.cont  # Changes to 0 on return or abort
