@@ -22,42 +22,18 @@
   ##q⇐F1"-q"
 #}•args 
 
-
-#•Show a.r
-
-#m←(∨´'-'⊸⍷)¨•args
-#•Show {𝕩/˜¬'-'⊸⍷𝕩}¨m/•args
-#•SHow "{}"
-#•Show {∨´•SHow'-'⍷𝕩}¨•args
-
-#e←@+27
-#i←0
-#⟨Run,Repl⟩←{
-  #Out⇐•Show
-  #In⇐{𝕊:z←i⊑e∾"[27;5;13~"⋄i↩i+1⋄z}
-  #term ⇐{
-    #OutRaw  ⇐ {𝕩}
-    #Flush   ⇐ {𝕩}
-    #RawMode ⇐ {𝕩}
-  #}
-#} •Import "./src/d.bqn"
-
-
-# TODO compile if possible
-# TODO if watch has been enabled
 MakeFFI ← {𝕊:
   foo⇐"foo" •FFI ""
 }
-x←{𝕊:Foo⇐{𝕊: •Show "none!"}}⎊MakeFFI @
-x.Foo @
+#x←{𝕊:Foo⇐{𝕊: •Show "none!"}}⎊MakeFFI @
 
-#⟨Run,Repl⟩←{
-  #Out  ⇐ •Show
-  #In   ⇐ •term.CharB
-  #term ⇐ •term
-#} •Import "./src/d.bqn"
+⟨Run,Repl⟩←{
+  Out  ⇐ •Show
+  In   ⇐ •term.CharB
+  term ⇐ •term
+} •Import "./src/rt.bqn"
 
-#{
-  #0=≠𝕩 ? Repl "𝕊𝕩𝕨"•HashMap @¨↕3
-#; Run •wdpath∾'/'∾⊑𝕩
-#} •args
+{
+  0=≠𝕩 ? Repl "𝕊𝕩𝕨"•HashMap @¨↕3
+; Run •wdpath∾'/'∾⊑𝕩
+} •args

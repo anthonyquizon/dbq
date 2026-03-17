@@ -1,7 +1,3 @@
-
-# decorate function
-
-
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -204,12 +200,11 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
     op ← (Next@) ⊑ ops
     op ↩ Op next
 
-    •Show ⟨i⊑bc,stack.s⟩
     vmap←env MakeVmap args
     vmap hooks._Pre i‿file‿stack
     # TODO toggle base bqn interpreter errors vs caught errors since stack is not captured
-    stack Op env
-    #stack Op⎊{𝕊:vmap hooks._Err i‿file} env
+    #stack Op env
+    stack Op⎊{𝕊:vmap hooks._Err i‿file} env
     vmap hooks._Post i‿file‿stack
 
     stack.cont  # Changes to 0 on return or abort
@@ -229,14 +224,11 @@ Eval⇐{ hooks‿vmap‿file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token
     {parent 𝕊 args: # Called when the body is evaluated
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨≠↑env.vars˙) args  # Initialize arguments
-      •Show [↕≠bc,bc]
-      •SHow [↕≠consts, consts]
       hooks‿file RunBC bc‿start‿env‿args
     }
   }¨ bodyInfo
 
   blocks ← {type‿imm‿body:
-    •SHow type‿imm‿body
     # Handle operands - modifier arguments 𝔽 𝔾
     inner ← imm ⊑ type ⊑ ⟨
       2⥊⟨{𝕊n: N ⟨⟩}⟩
