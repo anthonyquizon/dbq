@@ -27,13 +27,30 @@ MakeFFI ← {𝕊:
 }
 #x←{𝕊:Foo⇐{𝕊: •Show "none!"}}⎊MakeFFI @
 
-⟨Run,Repl⟩←{
-  Out  ⇐ •Show
-  In   ⇐ •term.CharB
-  term ⇐ •term
-} •Import "./src/rt.bqn"
+fw_create←"./cbits/lib.so" •FFI "*"‿"fw_create"
+fw_add←"./cbits/lib.so" •FFI ""‿"fw_add"‿"*"‿"*u8:c8"‿"u8"
+fw_poll←"./cbits/lib.so" •FFI "*"‿"fw_poll"‿"*"‿"i32"
 
-{
-  0=≠𝕩 ? Repl "𝕊𝕩𝕨"•HashMap @¨↕3
-; Run •wdpath∾'/'∾⊑𝕩
-} •args
+w←Fw_create ⟨⟩
+Fw_add ⟨w,"."∾@,1⟩
+
+{𝕊:
+  •SHow "poll"
+  e←Fw_poll ⟨w, 1000⟩
+  •SHow "woo"
+  1
+} •_while_ 1 1
+
+•Show "done"
+
+
+#⟨Run,Repl⟩←{
+  #Out  ⇐ •Show
+  #In   ⇐ •term.CharB
+  #term ⇐ •term
+#} •Import "./src/rt.bqn"
+
+#{
+  #0=≠𝕩 ? Repl "𝕊𝕩𝕨"•HashMap @¨↕3
+#; Run •wdpath∾'/'∾⊑𝕩
+#} •args
