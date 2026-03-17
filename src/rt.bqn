@@ -9,6 +9,7 @@ compile ← glyphs •Import "c.bqn"
 vm      ←        •Import "vm.bqn"
 
 io←•args
+entry←@
 
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 boldCyan‿red‿magenta‿boldRed‿reset←e⊸∾¨"[1;36m"‿"[31m"‿"[35m"‿"[1;31m"‿"[0m"
@@ -242,9 +243,25 @@ Repl⇐{
       ⟨⟩‿0‿0
     }
 
+    # HACK: starts new run within current run
     Reload←{𝕊:
-      imports←•HashMap˜⟨⟩
-      ⟨⟩‿0‿0
+      io.term.OutRaw clear
+      io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
+      io.term.OutRaw lf∾˜"Reload"
+      # TODO move
+      imports↩•HashMap˜⟨⟩
+      ctx‿dbg ↩ {𝕊:{
+        s    ⇐ ⟨⟩
+        Push ⇐ {𝕊:s∾↩<𝕩}
+        Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                                                                              # Return but don't pop top value
+        Pop  ⇐ {t←-𝕩⋄(s↓˜↩t)⊢⌽t↑s}                                                                           # Pop 𝕩 values; return as list
+      }}¨↕2
+
+      flg_brk↩0
+      last_brk↩@
+      Run entry
+      # TODO restart imports
+      •Exit 0
     }
 
     Help←{𝕊: 
@@ -256,18 +273,24 @@ Repl⇐{
       "":
         io.term.OutRaw •ToUTF8 lf∾˜prompt
         ⟨⟩‿0‿1
-    ; ")list":
+    ; ")vars":
         io.term.OutRaw clear
         io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
         io.term.OutRaw •ToUTF8 lf∾˜∾∾⟜" "¨vmap.Keys@
         ⟨⟩‿0‿1
+
     ; ")c": Continue 𝕩
     ; ")cont": Continue 𝕩
     ; ")continue": Continue 𝕩
-    ; ")r": Continue 𝕩
-    ; ")reload": Continue 𝕩
+
+    # TODO next line
+
+    ; ")r": Reload 𝕩
+    ; ")reload": Reload 𝕩
+
     ; ")h": Help 𝕩
     ; ")help": Help 𝕩
+
     ; 𝕩: ")"≡1↑𝕩 ? 
         io.term.OutRaw clear
         io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
@@ -284,7 +307,10 @@ Repl⇐{
     }
 
     Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch}                                               # add 𝕩 into ch at ps position with 𝕨 deletions
-    Exit ←{𝕊:io.term.OutRaw •ToUTF8 lf∾˜""⋄•Exit 0 }                                                   # add trailing newline before exit to keep terminal happy
+    Exit ←{𝕊:
+      io.term.OutRaw •ToUTF8 lf∾˜""
+      •Exit 0 
+    }                                                   # add trailing newline before exit to keep terminal happy
 
     # Tip: use `cat -v` in the terminal to find out key codes
     # Map of key buffer to function that returns ch‿pos‿continue
@@ -335,6 +361,7 @@ Repl⇐{
 }
 
 Run ⇐ {
+  entry↩𝕩
   Import 𝕩
   io.term.OutRaw •ToUTF8 lf∾˜"-- dbq end --"
 }
