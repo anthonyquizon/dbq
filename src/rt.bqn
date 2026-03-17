@@ -150,8 +150,8 @@ _PreHook←{vmap _𝕣 pos‿file‿stack:
 
   i←pos⊑⊑loc
   ll←i⊑line
-  { 𝕩:(last_brk≠ll)∧⊑ll∊brk ? 
-      last_brk↩ll 
+  { 𝕩:(last_brk≠ll)∧⊑ll∊brk ?
+      last_brk↩ll
       flg_brk↩1
   ; 𝕩:@
   }⍟⊣⊑brk∊˜i⊑line
@@ -199,7 +199,7 @@ Import ← {
       line  ⇐ +`src=lf                                                                                 # line numbers
       cols  ⇐ ∾(↕≠)¨⊔˜line                                                                             # column numbers
       cm    ⇐ cm                                                                                       # compilation result
-      brk   ⇐ /{∨´(≠𝕩)↑"??"⍷𝕩}¨line⊔src 
+      brk   ⇐ /{∨´(≠𝕩)↑"??"⍷𝕩}¨line⊔src
       src   ⇐ src                                                                                      # raw source code (helps for debugging)
 
       Get    ⇐ !∘"Import result referenced before completion"
@@ -229,6 +229,19 @@ Repl⇐{
     hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄_Err⇐{_𝕣:VMCatch}⋄End⇐{𝕩}}
     flg_brk↩0
 
+    SetHistory←{
+      0=≠history? ""‿0‿1
+    ; ch↩history⊑˜hn↩(1-˜≠history)⌊0⌈𝕩+hn
+      ch‿(≠ch)‿1
+    }
+    Continue←{ 𝕊:
+      io.term.OutRaw clear
+      io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
+      io.term.OutRaw lf∾˜"Continue"
+      flg_brk↩0
+      ⟨⟩‿0‿0
+    }
+
     Cmd←{
       "":
         io.term.OutRaw •ToUTF8 lf∾˜prompt
@@ -238,24 +251,17 @@ Repl⇐{
         io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
         io.term.OutRaw •ToUTF8 lf∾˜∾∾⟜" "¨vmap.Keys@
         ⟨⟩‿0‿1
+    ; ")c": Continue 𝕩
+    ; ")cont": Continue 𝕩
+    ; ")continue": Continue 𝕩
     ; 𝕩:
         io.term.OutRaw clear
         io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
-        in←"x__arg‿w__arg←•args ⋄ w__arg {𝕊:"∾𝕩∾"} x__arg"                                            # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables 
+        in←"x__arg‿w__arg←•args ⋄ w__arg {𝕊:"∾𝕩∾"} x__arg"                                             # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables 
         cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
         {@:1; io.Out hooks‿vmap‿@ vm.Eval 𝕩} cm
         hn↩≠history ∾⟜(⋈𝕩) ↩
         ⟨⟩‿0‿1
-    }
-
-    SetHistory←{
-      0=≠history? ""‿0‿1
-    ; ch↩history⊑˜hn↩(1-˜≠history)⌊0⌈𝕩+hn
-      ch‿(≠ch)‿1
-    }
-    Continue←{
-      𝕊:io.term.OutRaw lf∾˜"Continue"⋄flg_brk↩0
-      ⟨⟩‿0‿0
     }
 
     Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch}                                               # add 𝕩 into ch at ps position with 𝕨 deletions
@@ -271,7 +277,7 @@ Repl⇐{
     ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_brk↩1⋄⟨⟩‿0‿0}                                                    # ctrl+; next bytecode
     ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,0,1⟩
     ; 𝕩:𝕩≡e∾"[27;5;13~"      ? Continue                                                                # ctrl+enter
-    ; 𝕩:𝕩≡≍@+10              ? {𝕊: Cmd ((∨`∧∨⟜«)' '⊸≠)⊸/ch}                                                                  # enter and run command
+    ; 𝕩:𝕩≡≍@+10              ? {𝕊: Cmd ((∨`∧∨⟜«)' '⊸≠)⊸/ch}                                            # enter and run command
     ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "", 0⌈ps-1, 1⟩                                                 # backspace
     ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,0,1⟩                                                                # ctrl+u
     ; 𝕩:𝕩≡≍@+3               ? Exit                                                                    # ctrl+c
