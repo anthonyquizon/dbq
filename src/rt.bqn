@@ -161,6 +161,10 @@ _PreHook←{vmap _𝕣 pos‿file‿stack:
     h‿m‿t←3↑ln⊔˜+`((1+o+c)⊸=∨c⊸=)↕≠ln                                                                  # h: head, m: middle, t: tail
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩      # TODO move this to repl?
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h(⊣/˜≠)lf,magenta,m,reset,t⟩
+
+    # print top and bottom lines
+    
+
     Repl vmap
   }⍟⊣ flg_brk
 
@@ -226,16 +230,21 @@ Repl⇐{
     flg_brk↩0
 
     Cmd←{
-      ch 𝕊·: ""≡((∨`∧∨⟜«)' '⊸≠)⊸/ch?                                                                   # ignore empty statements
+      "":
         io.term.OutRaw •ToUTF8 lf∾˜prompt
         ⟨⟩‿0‿1
-    ; ch 𝕊·:
+    ; ")list":
         io.term.OutRaw clear
-        io.term.OutRaw •ToUTF8 lf∾˜prompt∾ch
-        in←"x__arg‿w__arg←•args ⋄ w__arg {𝕊:"∾ch∾"} x__arg"                                            # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables 
+        io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
+        io.term.OutRaw •ToUTF8 lf∾˜∾∾⟜" "¨vmap.Keys@
+        ⟨⟩‿0‿1
+    ; 𝕩:
+        io.term.OutRaw clear
+        io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
+        in←"x__arg‿w__arg←•args ⋄ w__arg {𝕊:"∾𝕩∾"} x__arg"                                            # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables 
         cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
         {@:1; io.Out hooks‿vmap‿@ vm.Eval 𝕩} cm
-        hn↩≠history ∾⟜(⋈ch) ↩
+        hn↩≠history ∾⟜(⋈𝕩) ↩
         ⟨⟩‿0‿1
     }
 
@@ -262,13 +271,14 @@ Repl⇐{
     ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_brk↩1⋄⟨⟩‿0‿0}                                                    # ctrl+; next bytecode
     ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,0,1⟩
     ; 𝕩:𝕩≡e∾"[27;5;13~"      ? Continue                                                                # ctrl+enter
-    ; 𝕩:𝕩≡≍@+10              ? ch⊸Cmd                                                                  # enter and run command
+    ; 𝕩:𝕩≡≍@+10              ? {𝕊: Cmd ((∨`∧∨⟜«)' '⊸≠)⊸/ch}                                                                  # enter and run command
     ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "", 0⌈ps-1, 1⟩                                                 # backspace
     ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,0,1⟩                                                                # ctrl+u
     ; 𝕩:𝕩≡≍@+3               ? Exit                                                                    # ctrl+c
     ; 𝕩:𝕩≡≍@+4               ? Exit                                                                    # Ctrl+d
     ; 𝕩:0=≠ch                ? ⟨𝕩,1,1⟩
     # TODO reload
+    # TODO list variables
     ; 𝕩:'\'=ch(⊣⊑˜0⌈≠⊸⌊)ps-1 ? z←uni/˜asc∊𝕩
                                ⟨ch0←1 Patch z, (≠z)+ps-1, 1⟩                                           # replace '/' with unicode chars
     ; 𝕩:                       ⟨ch0←0 Patch 𝕩, ps+1,      1⟩
