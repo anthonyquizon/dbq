@@ -8,7 +8,7 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 MakeVar ← { program 𝕊 name:
-  n⇐(=⟜¯1)◶⟨⊑⟜program.names,"no name"⟩ name
+  n⇐(=⟜¯1)◶⟨⊑⟜program.names,@⟩ name
   v⇐@  # Value
   Get ⇐ {𝕊:
     err←"Runtime: Variable referenced before definition"
@@ -184,7 +184,12 @@ MakeVmap←{
     h←"𝕊𝕩𝕨"•HashMap 3↑args
     h⊣{ 
       𝕊 ⟨vs⇐vars⋄p⇐parent⟩:
-        v←vs/˜{1∘𝕩.Get⎊0 @}¨vs⋄({𝕩.n}¨v) {𝕨 {𝕨 h.Set 𝕩.Get@}⍟(¬∘h.Has⊢) 𝕩}¨v
+        mv←{1∘𝕩.Get⎊0 @}¨vs # mask for existing values
+        mn←{𝕩.n≢@}¨vs # mask for existing names
+        v←(mn∧mv)/vs
+        ({𝕩.n}¨v){
+          𝕨 {𝕨 h.Set 𝕩.Get@}⍟(¬∘h.Has⊢) 𝕩
+        }¨v
         𝕊 p
     ; 𝕊 ·: h 
     } env
