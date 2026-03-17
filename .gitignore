@@ -4,3 +4,4 @@ _ref/
 *.so
 *.o
 a.out
+.dbq.bqn

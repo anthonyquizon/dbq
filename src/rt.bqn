@@ -362,6 +362,10 @@ Repl⇐{
 
 Run ⇐ {
   entry↩𝕩
+
+  # TODO parse .dbq file
+
+
   Import 𝕩
   io.term.OutRaw •ToUTF8 lf∾˜"-- dbq end --"
 }
