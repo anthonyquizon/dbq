@@ -19,8 +19,9 @@ e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 boldCyan‿red‿magenta‿boldRed‿reset←e⊸∾¨"[1;36m"‿"[31m"‿"[35m"‿"[1;31m"‿"[0m"
 
 # flags
-flg_bkt←0
+flg_brk←0
 flg_shw←0
+last_brk←@
 
 prompt←"    "
 
@@ -60,7 +61,7 @@ ShowAll←{𝕊:
   flg_shw↩1
 }
 
-Break←{flg_bkt↩1⋄𝕩}
+Break←{flg_brk↩1⋄𝕩}
 
 syslist←⟨
     "bqn"‿•Bqn
@@ -127,8 +128,6 @@ _CmpCatch←{ f Exit _𝕣 src:
 
   •Show •CurrentError@
   { 𝕊 loc‿msg:
-      #•SHow msg
-      #•SHow ⥊loc
       s‿e←loc↩⥊⊑˘loc
       # TODO locations
       io.term.OutRaw •ToUTF8 lf∾˜"Error: "∾msg
@@ -147,7 +146,15 @@ VMCatch⇐{𝕊 ·:
 }
 
 _PreHook←{vmap _𝕣 pos‿file‿stack:
-  ⟨cm,src,cols,line⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
+  ⟨cm,src,cols,brk,line⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
+
+  i←pos⊑⊑loc
+  ll←i⊑line
+  { 𝕩:(last_brk≠ll)∧⊑ll∊brk ? 
+      last_brk↩ll 
+      flg_brk↩1
+  ; 𝕩:@
+  }⍟⊣⊑brk∊˜i⊑line
 
   {𝕊:
     i←pos⊑⊑loc ⋄ o←|-´pos⊑¨loc ⋄ c←i⊑cols ⋄ l←i⊑line ⋄ ln←l⊑line⊔src                                   # i: position from bc to src. o: offset between start and end postions. c: current column number. l: current line number. ln: current line as string
@@ -155,7 +162,7 @@ _PreHook←{vmap _𝕣 pos‿file‿stack:
     io.term.OutRaw •ToUTF8     ∾⟨magenta,file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt l,reset⟩      # TODO move this to repl?
     io.term.OutRaw •ToUTF8 lf∾˜∾⟨"  ",h(⊣/˜≠)lf,magenta,m,reset,t⟩
     Repl vmap
-  }⍟⊣ flg_bkt
+  }⍟⊣ flg_brk
 
   {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
@@ -176,7 +183,6 @@ hooks←{
 }
 
 # Wrap namespace to vm compatable namespace 
-#! _∨(𝕩:⟨m,n⟩) 𝕊 ⟨file⇐⟩ → 
 Import ← {
     𝕊 𝕩     : ⟨⟩ 𝕊 𝕩
 ; 𝕨 𝕊 ⟨file⇐file⟩ : imports.Has file ? (imports.Get file).Get @
@@ -189,6 +195,7 @@ Import ← {
       line  ⇐ +`src=lf                                                                                 # line numbers
       cols  ⇐ ∾(↕≠)¨⊔˜line                                                                             # column numbers
       cm    ⇐ cm                                                                                       # compilation result
+      brk   ⇐ /{∨´(≠𝕩)↑"??"⍷𝕩}¨line⊔src 
       src   ⇐ src                                                                                      # raw source code (helps for debugging)
 
       Get    ⇐ !∘"Import result referenced before completion"
@@ -216,7 +223,7 @@ Repl⇐{
 
     vmap↩Vmap @ ⋄ ch←⟨⟩ ⋄ ps←0 ⋄ cont←0                                                                # vmap: variable mappings. ch: character buffer. ps: cursor offset
     hooks←{_Pre⇐_Post⇐{_𝕣:@}⋄_Err⇐{_𝕣:VMCatch}⋄End⇐{𝕩}}
-    flg_bkt↩0
+    flg_brk↩0
 
     Cmd←{
       ch 𝕊·: ""≡((∨`∧∨⟜«)' '⊸≠)⊸/ch?                                                                   # ignore empty statements
@@ -238,7 +245,7 @@ Repl⇐{
       ch‿(≠ch)‿1
     }
     Continue←{
-      𝕊:io.term.OutRaw lf∾˜"Continue"⋄flg_bkt↩0
+      𝕊:io.term.OutRaw lf∾˜"Continue"⋄flg_brk↩0
       ⟨⟩‿0‿0
     }
 
@@ -252,7 +259,7 @@ Repl⇐{
     ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,(≠ch)⌊ps+1,1⟩                                                       # arrow right
     ; 𝕩:𝕩≡e∾"[A"             ? SetHistory⟜¯1                                                           # arrow up
     ; 𝕩:𝕩≡e∾"[B"             ? SetHistory⟜1                                                            # arrow down
-    ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_bkt↩1⋄⟨⟩‿0‿0}                                                    # ctrl+; next bytecode
+    ; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_brk↩1⋄⟨⟩‿0‿0}                                                    # ctrl+; next bytecode
     ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,0,1⟩
     ; 𝕩:𝕩≡e∾"[27;5;13~"      ? Continue                                                                # ctrl+enter
     ; 𝕩:𝕩≡≍@+10              ? ch⊸Cmd                                                                  # enter and run command
