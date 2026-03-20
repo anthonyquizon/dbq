@@ -32,12 +32,16 @@ dbg_ops←⟨
 ⟩
 shw_ops←⟨47,48,49,50,51⟩
 
-ctx‿dbg ← {𝕊:{
-  s    ⇐ ⟨⟩
-  Push ⇐ {𝕊:s∾↩<𝕩}
-  Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                                                                              # Return but don't pop top value
-  Pop  ⇐ {t←-𝕩⋄(s↓˜↩t)⊢⌽t↑s}                                                                           # Pop 𝕩 values; return as list
-}}¨↕2
+
+Init←{𝕊:
+  imports↩•HashMap˜⟨⟩
+  ctx‿dbg↩{𝕊:{
+    s    ⇐ ⟨⟩
+    Push ⇐ {𝕊:s∾↩<𝕩}
+    Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                                                                              # Return but don't pop top value
+    Pop  ⇐ {t←-𝕩⋄(s↓˜↩t)⊢⌽t↑s}                                                                           # Pop 𝕩 values; return as list
+  }}¨↕2
+}
 
 sysfile←{
   Lines⇐{
@@ -364,7 +368,7 @@ Run ⇐ {
   entry↩𝕩
 
   # TODO parse .dbq file
-
+  # parse 
 
   Import 𝕩
   io.term.OutRaw •ToUTF8 lf∾˜"-- dbq end --"
