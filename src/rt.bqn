@@ -1,10 +1,5 @@
 # Reference: https://github.com/anthonyquizon/vbqn/blob/main/src/v.bqn
-glyphs ← ⟨
-  "+-×÷⋆√⌊⌈|¬∧∨<>≠=≤≥≡≢⊣⊢⥊∾≍⋈↑↓↕«»⌽⍉/⍋⍒⊏⊑⊐⊒∊⍷⊔!"
-  "˙˜˘¨⌜⁼´˝`"
-  "∘○⊸⟜⌾⊘◶⎉⚇⍟⎊"
-⟩
-
+⟨glyphs⟩ ←        •Import "cs.bqn"
 compile  ← glyphs •Import "c.bqn"
 vm       ←        •Import "vm.bqn"
 
@@ -137,28 +132,33 @@ VMCatch⇐{𝕊 ·:
   PrintStackTrace @
 }
 
-_PreHook←{vmap _𝕣 pos‿file‿stack:
-  ⟨cm,src,cols,brk,line⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
+_PreHook←{
+  · _𝕣 ·‿@‿·: @
+; vmap _𝕣 pos‿file‿stack:
+    # TODO if no file
+    ⟨cm,src,cols,brk,line⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
 
-  i←pos⊑⊑loc
-  ll←i⊑line
-  { 𝕩:(last_brk≠ll)∧⊑ll∊brk ?
-      last_brk↩ll
-      flg_brk↩1
-  ; 𝕩:@
-  }⍟⊣⊑brk∊˜i⊑line
+    i←pos⊑⊑loc
+    ll←i⊑line
+    { 𝕩:(last_brk≠ll)∧⊑ll∊brk ?
+        last_brk↩ll
+        flg_brk↩1
+    ; 𝕩:@
+    }⍟⊣⊑brk∊˜i⊑line
 
-  # TODO cleanup
-  {𝕊:Interrupt vmap‿cm‿file‿pos}⍟⊣ flg_brk
+    # TODO cleanup
+    {𝕊:Interrupt vmap‿cm‿file‿pos}⍟⊣ flg_brk
 
-  {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
+    {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
 
-_PostHook←{· _𝕣 pos‿file‿stack:
-  ⟨cm⟩←imports.Get file ⋄ bc‿·‿·‿·‿·‿·←cm
-  {𝕊: dbg.Pop 1}⍟⊣ (pos⊑bc)⍷dbg_ops
-  # TODO print location via loc
-  {𝕊:•Show (stack.Peek@) }⍟⊣ flg_shw∧(pos⊑bc)⍷shw_ops
+_PostHook←{
+  · _𝕣 ·‿@‿·: @
+; · _𝕣 pos‿file‿stack:
+    ⟨cm⟩←imports.Get file ⋄ bc‿·‿·‿·‿·‿·←cm
+    {𝕊: dbg.Pop 1}⍟⊣ (pos⊑bc)⍷dbg_ops
+    # TODO print location via loc
+    {𝕊:•Show (stack.Peek@) }⍟⊣ flg_shw∧(pos⊑bc)⍷shw_ops
 }
 
 _ErrorHook←{vmap _𝕣 pos‿file‿·:
@@ -204,6 +204,15 @@ Import ← {
     file←'/'⊸∾⍟(¬∘∨´"./"⊸⍷) 𝕩
     file↩𝕩∾˜(0⊸≢≠)◶""‿•file.Parent ctx.Peek @                                                          # resolve relative file location
     𝕨 𝕊 {file⇐file}
+}
+
+# namespaced evaluation
+Eval⇐{𝕊:
+  # find import
+  # update import namespace
+
+  cm ← (⟨1⊸⊑¨•primitives, ⟨⟩, ⟨⟩⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) 𝕩
+  {@:1; hooks‿{Has⇐0˙}‿@ vm.Eval 𝕩} cm
 }
 
 Run ⇐ {

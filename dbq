@@ -1,20 +1,26 @@
 #!/usr/bin/env bqn
 
-⟨ReadLine, SocketServer⟩←io←{
-  Out  ⇐ •Show
+⟨_ReadLine, _SocketServer⟩←{
+  Out  ⇐ •Out
   In   ⇐ •term.CharB
   term ⇐ •term
-} •Import "src/io.bqn" 
+} •Import "src/io.bqn"
 
-⟨Run⟩← {Interrupt⇐ReadLine} •Import "./src/rt.bqn"
+⟨Eval, Run⟩← {
+  Interrupt⇐ReadLine
+} •Import "./src/rt.bqn"
 
 usage←∾∾⟜(@+10)¨⟨
   "Usage: qbqn [options] [file.bqn [arguments]]"
 ⟩
 
-# TODO flags
+flgs←{
+  s⇐∨´𝕩∊⋈"-s"                                       # socket server
+}•args
 
 {
-  0=≠𝕩 ? ReadLine "𝕊𝕩𝕨"•HashMap @¨↕3
-; Run •wdpath∾'/'∾⊑𝕩
+  𝕩:flgs.s ? Eval _SocketServer 8080
+; 𝕩:0=≠𝕩   ? Eval _ReadLine "𝕊𝕩𝕨"•HashMap @¨↕3
+; 𝕩:         Run •wdpath∾'/'∾⊑𝕩
 } •args
+
