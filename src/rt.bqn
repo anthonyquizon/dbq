@@ -38,8 +38,8 @@ Init←{𝕊:
   ctx‿dbg↩{𝕊:{
     s    ⇐ ⟨⟩
     Push ⇐ {𝕊:s∾↩<𝕩}
-    Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                                                                              # Return but don't pop top value
-    Pop  ⇐ {t←-𝕩⋄(s↓˜↩t)⊢⌽t↑s}                                                                           # Pop 𝕩 values; return as list
+    Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                                                                            # Return but don't pop top value
+    Pop  ⇐ {t←-𝕩⋄(s↓˜↩t)⊢⌽t↑s}                                                                         # Pop 𝕩 values; return as list
   }}¨↕2
 }
 
@@ -257,8 +257,8 @@ Repl⇐{
       ctx‿dbg ↩ {𝕊:{
         s    ⇐ ⟨⟩
         Push ⇐ {𝕊:s∾↩<𝕩}
-        Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                                                                              # Return but don't pop top value
-        Pop  ⇐ {t←-𝕩⋄(s↓˜↩t)⊢⌽t↑s}                                                                           # Pop 𝕩 values; return as list
+        Peek ⇐ {𝕊:0=≠s?⟨⟩;¯1⊑s}                                                                        # Return but don't pop top value
+        Pop  ⇐ {t←-𝕩⋄(s↓˜↩t)⊢⌽t↑s}                                                                     # Pop 𝕩 values; return as list
       }}¨↕2
 
       flg_brk↩0
@@ -268,7 +268,7 @@ Repl⇐{
       •Exit 0
     }
 
-    Help←{𝕊: 
+    Help←{𝕊:
       # TODO
       ⟨⟩‿0‿1
     }
@@ -295,7 +295,7 @@ Repl⇐{
     ; ")h": Help 𝕩
     ; ")help": Help 𝕩
 
-    ; 𝕩: ")"≡1↑𝕩 ? 
+    ; 𝕩: ")"≡1↑𝕩 ?
         io.term.OutRaw clear
         io.term.OutRaw •ToUTF8 lf∾˜prompt∾𝕩
         io.term.OutRaw •ToUTF8 lf∾˜"unknown command"
@@ -313,8 +313,8 @@ Repl⇐{
     Patch←{0=≠ch?⟨⟩;∾(∾⟜𝕩(-𝕨)⊸↓)¨⌾(1⊸↑) ps(⊢⊔˜≤⟜(↕≠))ch}                                               # add 𝕩 into ch at ps position with 𝕨 deletions
     Exit ←{𝕊:
       io.term.OutRaw •ToUTF8 lf∾˜""
-      •Exit 0 
-    }                                                   # add trailing newline before exit to keep terminal happy
+      •Exit 0
+    }                                                                                                  # add trailing newline before exit to keep terminal happy
 
     # Tip: use `cat -v` in the terminal to find out key codes
     # Map of key buffer to function that returns ch‿pos‿continue
