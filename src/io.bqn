@@ -5,7 +5,21 @@
 Out←term.OutRaw
 
 prompt←"    "
-history←⟨⟩
+history←{
+  f←•wdpath∾"/.dbq.history"
+  n←1-˜≠s←•file.Lines⎊⟨⟩ f
+  Set←{
+    0=≠s?""
+  ; (n+𝕩)≥≠s?""
+  ; s⊑˜n↩(1-˜≠s)⌊0⌈𝕩+n
+  }
+  Add⇐{
+    n↩≠s∾⟜(⋈𝕩)↩
+    f •file.Lines s
+  }
+  Inc⇐Set⟜1
+  Dec⇐Set⟜¯1
+}
 
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 
@@ -57,8 +71,15 @@ Cmd←{
     ⟨⟩‿0‿1
 
 ; 𝕩:
-    Out •ToUTF8 lf∾˜prompt
-    ⟨⟩‿0‿1
+  Out clear
+  Out •ToUTF8 lf∾˜prompt∾𝕩
+
+  #in←"x__arg‿w__arg←•args ⋄ w__arg {𝕊:"∾𝕩∾"} x__arg"                                             # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables
+  #cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) in
+  #{@:1; io.Out hooks‿vmap‿@ vm.Eval 𝕩} cm
+
+  history.Add 𝕩
+  ⟨⟩‿0‿1
 }
 
 Exit ←{𝕊: Out •ToUTF8 lf∾˜"" ⋄ •Exit 0 }
@@ -93,21 +114,26 @@ ReadLine⇐{𝕊:
   ; n𝕊𝕩: ∾(∾⟜𝕩(-n)⊸↓)¨⌾(1⊸↑)ps(⊢⊔˜≤⟜(↕≠))ch
   }
   
-  # map of inputs to ⟨ch, ps, eff⟩. ch: new character list, ps: position, eff: side effect function⟩  
+  # Tip: use `cat -v` in the terminal to find out key codes
+  # Map of key buffer to function that returns chars‿position‿continue
   Handler←{
     𝕩:𝕩≡e∾"[D"             ? ⟨ch,0⌈ps-1, 1⟩                                                               # arrow left
   ; 𝕩:𝕩≡e∾"[C"             ? ⟨ch,(≠ch)⌊ps+1,1⟩                                                             # arrow right
-  #; 𝕩:𝕩≡e∾"[A"             ? SetHistory⟜¯1                                                           # arrow up
-  #; 𝕩:𝕩≡e∾"[B"             ? SetHistory⟜1                                                            # arrow down
+  ; 𝕩:𝕩≡e∾"[A"             ? {𝕊:ch←history.Dec@⋄⟨ch,≠ch,1⟩}  # arrow up
+  ; 𝕩:𝕩≡e∾"[B"             ? {𝕊:ch←history.Inc@⋄⟨ch,≠ch,1⟩}  # arrow down
+  ; 𝕩:𝕩≡≍@+16              ? {𝕊:ch←history.Dec@⋄⟨ch,≠ch,1⟩}  # ctrl+p
+  ; 𝕩:𝕩≡≍@+14              ? {𝕊:ch←history.Inc@⋄⟨ch,≠ch,1⟩}  # ctrl+n 
+  ; 𝕩:𝕩≡e∾"^P"             ? {𝕊:ch←history.Dec@⋄⟨ch,≠ch,1⟩}  # arrow up
+  ; 𝕩:𝕩≡e∾"^N"             ? {𝕊:ch←history.Inc@⋄⟨ch,≠ch,1⟩}  # arrow down
   #; 𝕩:𝕩≡e∾"[46;5u"         ? {𝕊:flg_brk↩1⋄⟨⟩‿0‿0}                                                    # ctrl+; next bytecode
   ; 𝕩:𝕩≡e∾"[109;5u"        ? ⟨⟨⟩,0,1⟩
   #; 𝕩:𝕩≡e∾"[27;5;13~"      ? Continue                                                                # ctrl+enter
   ; 𝕩:𝕩≡≍@+10              ? {𝕊: Cmd ((∨`∧∨⟜«)' '⊸≠)⊸/ch}                                            # enter and run command
   ; 𝕩:𝕩≡≍@+127             ? ⟨1 Patch "", 0⌈ps-1, 1⟩                                                 # backspace
-  #; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,0,1⟩                                                                # ctrl+u
-  #; 𝕩:𝕩≡≍@+3               ? Exit                                                                    # ctrl+c
-  #; 𝕩:𝕩≡≍@+4               ? Exit                                                                    # Ctrl+d
-  ; 𝕩:0=≠ch                 ? ⟨𝕩,1,1⟩
+  ; 𝕩:𝕩≡≍@+21              ? ⟨⟨⟩,0,1⟩                                                                # ctrl+u
+  ; 𝕩:𝕩≡≍@+3               ? Exit                                                                    # ctrl+c
+  ; 𝕩:𝕩≡≍@+4               ? Exit                                                                    # Ctrl+d
+  ; 𝕩:0=≠ch                ? ⟨𝕩,1,1⟩
   # TODO reload
   # TODO list variables
   ; 𝕩:'\'=ch(⊣⊑˜0⌈≠⊸⌊)ps-1 ? z←uni/˜asc∊𝕩
