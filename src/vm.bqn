@@ -182,6 +182,7 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
 # env 𝕊 args→(𝕊→vmap)
 MakeVmap←{ 
   env 𝕊 args: {𝕊: 
+    # TODO use plain table
     h←"𝕊𝕩𝕨"•HashMap 3↑args
     h⊣{ 
       𝕊 ⟨vs⇐vars⋄p⇐parent⟩:
