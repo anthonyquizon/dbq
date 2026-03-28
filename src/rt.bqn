@@ -8,10 +8,7 @@ vm       ←        •Import "vm.bqn"
 entry←@
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 
-# flags
 flg_brk←0
-flg_shw←0
-last_brk←@
 
 dbg_ops←⟨
   16,17,20,21,26,27,                                                                                   # Application
@@ -43,12 +40,9 @@ Show←{
   •Show 𝕩
 }
 
-ShowAll←{𝕊:
-  # TODO current line in file
-  flg_shw↩1
+Break←{
+  flg_brk↩1⋄𝕩
 }
-
-Break←{flg_brk↩1⋄𝕩}
 
 syslist←⟨
     "bqn"‿•Bqn
@@ -75,7 +69,6 @@ syslist←⟨
     "repr"‿•Repr
     "rand"‿•rand
     "show"‿Show
-    "showall"‿ShowAll
     "term"‿•term
     "toutf8"‿•ToUTF8
     "type"‿•Type
@@ -117,11 +110,13 @@ _CmpCatch←{ f Exit _𝕣 src:
   { 𝕊 loc‿msg:
       s‿e←loc↩⥊⊑˘loc
       # TODO locations
-      •term.OutRaw •ToUTF8 lf∾˜"Error: "∾msg
-      •term.OutRaw •ToUTF8 lf∾˜(s⊑l)⊑sl
-      •term.OutRaw •ToUTF8 lf∾˜⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
+      #•term.OutRaw •ToUTF8 lf∾˜"Error: "∾msg
+      #•term.OutRaw •ToUTF8 lf∾˜(s⊑l)⊑sl
+      #•term.OutRaw •ToUTF8 lf∾˜⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
+      Eval _Interrupt @
   ; 𝕊 𝕩:
-      •term.OutRaw •ToUTF8 lf∾˜"Error: "∾(•Fmt 𝕩)
+      #•term.OutRaw •ToUTF8 lf∾˜"Error: "∾(•Fmt 𝕩)
+      Eval _Interrupt @
       PrintStackTrace @
   }•CurrentError@
   Exit 1
@@ -140,14 +135,15 @@ _PreHook←{
 
     i←pos⊑⊑loc
     ll←i⊑line
-    { 𝕩:(last_brk≠ll)∧⊑ll∊brk ?
-        last_brk↩ll
-        flg_brk↩1
-    ; 𝕩:@
-    }⍟⊣⊑brk∊˜i⊑line
+    #{ 𝕩:(last_brk≠ll)∧⊑ll∊brk ?
+        #last_brk↩ll
+        #flg_brk↩1
+    #; 𝕩:@
+    #}⍟⊣⊑brk∊˜i⊑line
 
     # TODO cleanup
-    {𝕊:Interrupt vmap‿cm‿file‿pos}⍟⊣ flg_brk
+    # TODO pass line info
+    {𝕊: ((Vmap@)⊸Eval) _Interrupt @ }⍟⊣ flg_brk
 
     {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
 }
@@ -158,10 +154,12 @@ _PostHook←{
     ⟨cm⟩←imports.Get file ⋄ bc‿·‿·‿·‿·‿·←cm
     {𝕊: dbg.Pop 1}⍟⊣ (pos⊑bc)⍷dbg_ops
     # TODO print location via loc
-    {𝕊:•Show (stack.Peek@) }⍟⊣ flg_shw∧(pos⊑bc)⍷shw_ops
+    #{𝕊:(stack.Peek@) }⍟⊣ (pos⊑bc)⍷shw_ops
 }
 
-_ErrorHook←{vmap _𝕣 pos‿file‿·:
+_ErrorHook←{
+  · _𝕣 ·‿@‿·: @
+; vmap _𝕣 pos‿file‿·:
   ⟨cm,src,cols,brk,line⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
   VMCatch@
   Interrupt vmap‿cm‿file‿pos
@@ -172,7 +170,6 @@ hooks←{
   _Pre  ⇐ _PreHook
   _Post ⇐ _PostHook
   _Err  ⇐ _ErrorHook
-  End   ⇐ {𝕊: flg_shw↩0 }
 }
 
 # Wrap namespace to vm compatable namespace 
@@ -207,16 +204,21 @@ Import ← {
 }
 
 # namespaced evaluation
-Eval⇐{𝕊:
+Eval⇐{
+    𝕊 𝕩: ⟨⟩ 𝕊 𝕩
+; vmap 𝕊 𝕩:
+  vmap↩Vmap@
   # find import
   # update import namespace
-
-  cm ← (⟨1⊸⊑¨•primitives, ⟨⟩, ⟨⟩⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) 𝕩
-  {@:1; hooks‿{Has⇐0˙}‿@ vm.Eval 𝕩} cm
+  # keys
+  in←"x__arg‿w__arg←•args ⋄ w__arg {𝕊:"∾𝕩∾"} x__arg"   # HACK: wrap in function via string manipulation to expose 𝕊 𝕨 𝕩 variables 
+  cm ← (⟨1⊸⊑¨•primitives, System vmap.Get¨"𝕩𝕨", vmap.Keys@⟩⊸Compile)⎊(""⊸({𝕊:@}_CmpCatch)) 𝕩
+  {@:1; hooks‿vmap‿@ vm.Eval 𝕩} cm
 }
 
-Run ⇐ {
+Run ⇐ { 
   Init@
+
   entry↩𝕩
 
   # TODO parse .dbq file

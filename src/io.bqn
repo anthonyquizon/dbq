@@ -1,9 +1,9 @@
-# socket server
 # Reference: https://github.com/Brian-ED/bqn-socket/blob/master/socket.bqn
+# Reference: https://github.com/anthonyquizon/dbq/blob/bcd6c4bcff9c9912032a1c30b946bdba7158e47e/src/rt.bqn
 
 ⟨asc,uni⟩←•Import "cs.bqn"
 ⟨In,Out,term⟩←•args
-ROut←term.OutRaw
+OutR←term.OutRaw
 
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
 
@@ -50,7 +50,7 @@ _ReadLine⇐{
   prompt←"    "
 
   term.RawMode 1
-  ROut •ToUTF8 prompt
+  OutR •ToUTF8 prompt
   term.Flush@
 
   history←{
@@ -66,7 +66,7 @@ _ReadLine⇐{
     Dec⇐Set⟜¯1
   }
 
-  Exit ←{𝕊: ROut •ToUTF8 lf∾˜"" ⋄ •Exit 0 }
+  Exit ←{ 𝕊: OutR •ToUTF8 lf∾˜"" ⋄ •Exit 0 }
 
   Patch←{
     ·𝕊· : 0=≠ch?⟨⟩
@@ -75,12 +75,17 @@ _ReadLine⇐{
 
   Cmd←{
     "":
-      ROut •ToUTF8 lf∾˜prompt
+      OutR •ToUTF8 lf∾˜prompt
       ⟨⟩‿0‿1
 
+  ; 𝕩: ")"≡1↑𝕩 ?
+    OutR clear
+    OutR •ToUTF8 lf∾˜prompt∾𝕩
+    OutR •ToUTF8 lf∾˜"unknown command"
+    ⟨⟩‿0‿1
   ; 𝕩:
-    ROut clear
-    ROut •ToUTF8 lf∾˜prompt∾𝕩
+    OutR clear
+    OutR •ToUTF8 lf∾˜prompt∾𝕩
     Out •Fmt Op 𝕩
     history.Add 𝕩
     ⟨⟩‿0‿1
@@ -129,14 +134,14 @@ _ReadLine⇐{
     eff←Handler Input@
     ch‿ps‿cont↩Eff@
 
-    ROut clear                                                           # clear line and set to start of line
-    ROut •ToUTF8 prompt
-    ROut •ToUTF8 ch
-    ROut e∾"["∾(•Fmt (≠prompt)+ps+1)∾"G"
+    OutR clear                                                          # clear line and set to start of line
+    OutR •ToUTF8 prompt
+    OutR •ToUTF8 ch
+    OutR e∾"["∾(•Fmt (≠prompt)+ps+1)∾"G"
     term.Flush@
     cont
   }•_while_ ⊢ 1
 
-  ROut •ToUTF8 lf∾˜""
+  OutR •ToUTF8 lf∾˜""
 }
 

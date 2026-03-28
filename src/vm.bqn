@@ -179,23 +179,30 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
 ⟩
 
 # convert env to hashmap - variable names to functions that return variables
-# env 𝕊 args→(𝕊→vmap)
-MakeVmap←{ 
-  env 𝕊 args: {𝕊: 
-    # TODO use plain table
-    h←"𝕊𝕩𝕨"•HashMap 3↑args
-    h⊣{ 
-      𝕊 ⟨vs⇐vars⋄p⇐parent⟩:
-        mv←{1∘𝕩.Get⎊0 @}¨vs # mask for existing values
-        mn←{𝕩.n≢@}¨vs # mask for existing names
-        v←(mn∧mv)/vs
-        ({𝕩.n}¨v){
-          𝕨 {𝕨 h.Set 𝕩.Get@}⍟(¬∘h.Has⊢) 𝕩
-        }¨v
-        𝕊 p
-    ; 𝕊 ·: h 
-    } env
-  } 
+#MakeVmap←{ env‿args 𝕊 ·:
+  #vmap←>⟨"𝕊"‿"𝕩"‿"𝕨",3↑args⟩
+  #vmap⊣{ 
+    #𝕊 ⟨vs⇐vars⟩:
+      #v←vs/˜({𝕩.n≢@}¨vs)∧{1∘𝕩.Get⎊0 @}¨vs # mask existing names and values
+      #vmap↩vmap∾˘>⟨{𝕩.n}¨v, {𝕩.Get@}¨v⟩
+      #𝕊 𝕩.parent
+  #; 𝕊 ·: vmap
+  #} env
+#}
+
+MakeVmap←{ env‿args 𝕊 ·:
+  h←"𝕊𝕩𝕨"•HashMap 3↑args
+  h⊣{
+    𝕊 ⟨vs⇐vars⋄p⇐parent⟩:
+      mv←{1∘𝕩.Get⎊0 @}¨vs # mask for existing values
+      mn←{𝕩.n≢@}¨vs # mask for existing names
+      v←(mn∧mv)/vs
+      ({𝕩.n}¨v){
+        𝕨 {𝕨 h.Set 𝕩.Get@}⍟(¬∘h.Has⊢) 𝕩
+      }¨v
+      𝕊 p
+  ; 𝕊 ·: h
+  } env
 }
 
 # Evaluate a body
@@ -207,7 +214,7 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
     op ← (Next@) ⊑ ops
     op ↩ Op next
 
-    vmap←env MakeVmap args
+    Vmap←env‿args⊸MakeVmap
     vmap hooks._Pre i‿file‿stack
     # TODO toggle base bqn interpreter errors vs caught errors since stack is not captured
     #stack Op env
@@ -216,7 +223,6 @@ RunBC ← { hooks‿file𝕊bc‿pos‿env‿args:  # bytecode, starting positio
 
     stack.cont  # Changes to 0 on return or abort
   } •_while_ ⊢ 1
-  hooks.End file
   stack.rslt
 }
 
