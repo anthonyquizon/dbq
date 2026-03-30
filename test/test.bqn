@@ -8,6 +8,9 @@ cont←(@+27)∾"[27;5;13~"                      # ctrl+enter
 Check←{𝕊: 
   •Show outB
   •Show exp
+  !outB≡exp
+  •Out "ok ✓"
+  0
 }
 
 ⟨Run⟩←{
@@ -24,4 +27,3 @@ exp↩       ⟨"1", "3"   ⟩
 Run "../test/cases.bqn"
 Check@
 
-•Out "ok ✓"

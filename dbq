@@ -1,6 +1,11 @@
 #!/usr/bin/env bqn
 
-io←{Out⇐•Out ⋄ term⇐•term ⋄ Exit⇐•Exit}
+io←{
+  Out⇐•Out
+  term⇐•term
+  Exit⇐•Exit
+  history_file⇐".dbq_history"
+}
 ⟨_ReadLine⟩← io •Import "./src/rl.bqn"
 ⟨Eval, Run⟩← io •Import "./src/rt.bqn"
 

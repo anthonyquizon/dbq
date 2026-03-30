@@ -10,17 +10,20 @@ prompt←"    "
 term.RawMode 1
 term.OutRaw •ToUTF8 prompt
 term.Flush@
-# TODO NO_COLOR=1
 
 history←{
-  f←•wdpath∾"/.dbq.history"
+  history_file←{⟨history_file⟩:history_file; ⟨⟩} •args 
+  f←•wdpath∾history_file
   n←1-˜≠s←•file.Lines⎊⟨⟩ f
   Set←{
     0=≠s?""
   ; (n+𝕩)≥≠s?""
   ; s⊑˜n↩(1-˜≠s)⌊0⌈𝕩+n
   }
-  Add⇐{n↩≠s∾⟜(⋈𝕩)↩⋄f •file.Lines s}
+  Add⇐{
+    n↩≠s∾⟜(⋈𝕩)↩
+    {⟨⟩:@; f •file.Lines s} history_file
+  }
   Inc⇐Set⟜1
   Dec⇐Set⟜¯1
 }
