@@ -1,14 +1,8 @@
 #!/usr/bin/env bqn
 
-⟨_ReadLine, _SocketServer⟩←{
-  Out  ⇐ •Out
-  In   ⇐ •term.CharB
-  term ⇐ •term
-} •Import "src/io.bqn"
-
-⟨Eval, Run⟩← {
-  Interrupt⇐ReadLine
-} •Import "./src/rt.bqn"
+io←{Out⇐•Out ⋄ term⇐•term ⋄ Exit⇐•Exit}
+⟨_ReadLine⟩← io •Import "./src/rl.bqn"
+⟨Eval, Run⟩← io •Import "./src/rt.bqn"
 
 usage←∾∾⟜(@+10)¨⟨
   "Usage: qbqn [options] [file.bqn [arguments]]"
@@ -19,7 +13,8 @@ flgs←{
 }•args
 
 {
-  𝕩:flgs.s ? Eval _SocketServer 8080
+  #𝕩:flgs.s ? Eval _SocketServer 8080
+  𝕩:flgs.s ? @
 ; 𝕩:0=≠𝕩   ? Eval _ReadLine "𝕊𝕩𝕨"•HashMap @¨↕3
 ; 𝕩:         Run •wdpath∾'/'∾⊑𝕩
 } •args

@@ -190,6 +190,8 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   #} env
 #}
 
+# TODO lazy memoized eval
+# TODO remove this and thread env instead?
 MakeVmap←{ env‿args 𝕊 ·:
   h←"𝕊𝕩𝕨"•HashMap 3↑args
   h⊣{

@@ -1,9 +1,8 @@
 # Reference: https://github.com/anthonyquizon/vbqn/blob/main/src/v.bqn
-⟨glyphs⟩ ←        •Import "cs.bqn"
-compile  ← glyphs •Import "c.bqn"
-vm       ←        •Import "vm.bqn"
-
-⟨Interrupt⟩ ← •args
+⟨glyphs⟩    ←        •Import "cs.bqn"
+compile     ← glyphs •Import "c.bqn"
+vm          ←        •Import "vm.bqn"
+⟨_ReadLine⟩ ← •args  •Import "rl.bqn"
 
 entry←@
 e←@+27 ⋄ lf←@+10 ⋄ clear←e∾"[2K"∾e∾"[0G"
@@ -113,10 +112,10 @@ _CmpCatch←{ f Exit _𝕣 src:
       #•term.OutRaw •ToUTF8 lf∾˜"Error: "∾msg
       #•term.OutRaw •ToUTF8 lf∾˜(s⊑l)⊑sl
       #•term.OutRaw •ToUTF8 lf∾˜⊣◶" ∧"¨«((↕≠src)/˜∨´l⊸=¨loc⊏l)∊s+↕1+e-s
-      Eval _Interrupt @
+      Eval _ReadLine @
   ; 𝕊 𝕩:
       #•term.OutRaw •ToUTF8 lf∾˜"Error: "∾(•Fmt 𝕩)
-      Eval _Interrupt @
+      Eval _ReadLine @
       PrintStackTrace @
   }•CurrentError@
   Exit 1
@@ -124,6 +123,7 @@ _CmpCatch←{ f Exit _𝕣 src:
 
 VMCatch⇐{𝕊 ·:
   #•term.OutRaw •ToUTF8 lf∾˜∾⟨boldRed,"Error: ", •CurrentError@, reset⟩
+  •term.OutRaw •ToUTF8  "VMCatch"
   PrintStackTrace @
 }
 
@@ -143,9 +143,9 @@ _PreHook←{
 
     # TODO cleanup
     # TODO pass line info
-    {𝕊: ((Vmap@)⊸Eval) _Interrupt @ }⍟⊣ flg_brk
 
-    {𝕊: dbg.Push ⟨file,pos⟩}⍟⊣ (pos⊑bc)⍷dbg_ops
+    {𝕊:dbg.Push file‿pos         }⍟⊣ dbg_ops⍷˜pos⊑bc
+    {𝕊:((Vmap@)⊸Eval) _ReadLine @}⍟⊣ flg_brk
 }
 
 _PostHook←{
@@ -162,7 +162,7 @@ _ErrorHook←{
 ; vmap _𝕣 pos‿file‿·:
   ⟨cm,src,cols,brk,line⟩←imports.Get file ⋄ bc‿·‿·‿·‿loc‿·←cm
   VMCatch@
-  Interrupt vmap‿cm‿file‿pos
+  Eval _ReadLine vmap‿cm‿file‿pos
 }
 
 # Hooks to run in VM
@@ -207,7 +207,8 @@ Import ← {
 Eval⇐{
     𝕊 𝕩: ⟨⟩ 𝕊 𝕩
 ; vmap 𝕊 𝕩:
-  vmap↩Vmap@
+  vmap↩Vmap@ # TODO lazy eval
+  flg_brk↩0
   # find import
   # update import namespace
   # keys
